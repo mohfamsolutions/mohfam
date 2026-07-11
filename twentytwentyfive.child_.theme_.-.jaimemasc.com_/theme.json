@@ -55,6 +55,12 @@
   "templateParts": [
     { "area": "header", "name": "header", "title": "MohFam Header" },
     { "area": "footer", "name": "footer", "title": "MohFam Footer" }
+  ],
+  "customTemplates": [
+    {
+      "name": "service-detail",
+      "postTypes": ["page"],
+      "title": "Individual Service Detail"
+    }
   ]
 }
-
