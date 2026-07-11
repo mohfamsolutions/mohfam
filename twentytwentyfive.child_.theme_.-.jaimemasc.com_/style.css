@@ -1,0 +1,28 @@
+/*
+Theme Name:     Twenty Twenty-Five Child
+Theme URI:      https://jaimemasc.com/
+Description:    Child theme for the Twenty Twenty-Five theme
+Author:         Jaime Mascarenhas
+Author URI:     https://jaimemasc.com/
+Template:       twentytwentyfive
+Version:        1.0.0
+Tags:           block-template
+Text Domain:    twentytwentyfive-child
+*/
+
+/*modify focus highlight on cliked links*/
+a:focus {
+outline: 0.01 ;
+/* style | color */
+outline: dashed #222222;
+}
+
+
+/* slider carousel plugin*/
+/* increase the navbar z-index.*/
+.is-position-sticky { z-index: 11; }
+/*lower the z-index of the slider dots navigation*/
+.swiper-pagination, .cb-button-next, .cb-button-prev { z-index: 9; }
+
+/*modify focus highlight on carousel arrows*/
+.wp-block-cb-carousel-v2 .cb-button-next:focus, .wp-block-cb-carousel-v2 .cb-button-prev:focus { outline: 0.01 ; outline: dashed #222222 ; }
