@@ -1,16 +1,60 @@
 {
-      "version": 3,
-  "inherits": "twentytwentyfive",
-  "templateParts": [
-    {
-      "area": "header",
-      "name": "Header",
-      "title": "Header"
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "760px",
+      "wideSize": "1280px"
     },
-    {
-      "area": "footer",
-      "name": "Footer",
-      "title": "Footer"
+    "color": {
+      "defaultPalette": false,
+      "palette": [
+        { "slug": "charcoal", "name": "Charcoal", "color": "#1a1a1b" },
+        { "slug": "gold", "name": "Warm Gold", "color": "#c5a059" },
+        { "slug": "ivory", "name": "Soft Ivory", "color": "#f9f9f7" },
+        { "slug": "white", "name": "White", "color": "#ffffff" },
+        { "slug": "neutral", "name": "Neutral Gray", "color": "#e5e5e5" },
+        { "slug": "muted", "name": "Muted Text", "color": "#626267" }
+      ]
+    },
+    "spacing": {
+      "units": ["px", "rem", "vw", "%"]
+    },
+    "typography": {
+      "fluid": true,
+      "fontFamilies": [
+        { "slug": "inter", "name": "Inter", "fontFamily": "Inter, Arial, sans-serif" },
+        { "slug": "playfair", "name": "Playfair Display", "fontFamily": "'Playfair Display', Georgia, serif" }
+      ]
     }
+  },
+  "styles": {
+    "color": {
+      "background": "#f9f9f7",
+      "text": "#1a1a1b"
+    },
+    "spacing": {
+      "blockGap": "0"
+    },
+    "typography": {
+      "fontFamily": "var(--wp--preset--font-family--inter)",
+      "fontSize": "16px",
+      "lineHeight": "1.6"
+    },
+    "elements": {
+      "heading": {
+        "typography": { "fontFamily": "var(--wp--preset--font-family--playfair)", "lineHeight": "1.2" }
+      },
+      "link": {
+        "color": { "text": "#1a1a1b" },
+        ":hover": { "color": { "text": "#775a19" } }
+      }
+    }
+  },
+  "templateParts": [
+    { "area": "header", "name": "header", "title": "MohFam Header" },
+    { "area": "footer", "name": "footer", "title": "MohFam Footer" }
   ]
 }
+
