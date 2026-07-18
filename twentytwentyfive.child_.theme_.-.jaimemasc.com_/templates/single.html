@@ -1,0 +1,30 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+<!-- wp:group {"tagName":"main","className":"mohfam-single","layout":{"type":"default"}} -->
+<main class="wp-block-group mohfam-single">
+	<!-- wp:group {"className":"mohfam-shell mohfam-single__header","layout":{"type":"constrained","contentSize":"850px"}} -->
+	<div class="wp-block-group mohfam-shell mohfam-single__header">
+		<!-- wp:post-terms {"term":"category","textAlign":"center","className":"mohfam-single__category"} /-->
+		<!-- wp:post-title {"level":1,"textAlign":"center"} /-->
+		<!-- wp:group {"className":"mohfam-single__meta","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"center"}} -->
+		<div class="wp-block-group mohfam-single__meta">
+			<!-- wp:post-author-name {"isLink":true} /-->
+			<!-- wp:post-date {"format":"F j, Y"} /-->
+		</div>
+		<!-- /wp:group -->
+	</div>
+	<!-- /wp:group -->
+	<!-- wp:post-featured-image {"aspectRatio":"16/9","align":"wide","className":"mohfam-single__image"} /-->
+	<!-- wp:post-content {"layout":{"type":"constrained","contentSize":"720px"},"className":"mohfam-single__content"} /-->
+	<!-- wp:group {"className":"mohfam-single__footer","layout":{"type":"constrained","contentSize":"720px"}} -->
+	<div class="wp-block-group mohfam-single__footer">
+		<!-- wp:separator --><hr class="wp-block-separator has-alpha-channel-opacity"/><!-- /wp:separator -->
+		<!-- wp:group {"layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between"}} --><div class="wp-block-group"><!-- wp:paragraph --><p>Share this article</p><!-- /wp:paragraph --><!-- wp:post-terms {"term":"post_tag"} /--></div><!-- /wp:group -->
+	</div>
+	<!-- /wp:group -->
+	<!-- wp:html -->
+	<section class="mohfam-shell mohfam-newsletter mohfam-newsletter--single"><div><h2>Stay Informed</h2><p>Receive exclusive insights on commercial security and luxury property maintenance directly in your inbox.</p></div><div class="mohfam-newsletter__form"><input type="email" placeholder="Your Email Address" aria-label="Email address"><button type="button">Subscribe</button></div></section>
+	<!-- /wp:html -->
+</main>
+<!-- /wp:group -->
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->
+

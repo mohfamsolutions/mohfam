@@ -1,0 +1,62 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+<!-- wp:group {"tagName":"main","className":"mohfam-blog","layout":{"type":"default"}} -->
+<main class="wp-block-group mohfam-blog">
+	<!-- wp:group {"className":"mohfam-shell mohfam-blog__header","layout":{"type":"default"}} -->
+	<div class="wp-block-group mohfam-shell mohfam-blog__header">
+		<!-- wp:html --><span class="mohfam-eyebrow">Professional Resource Center</span><!-- /wp:html -->
+		<!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Insights &amp;<br>Updates</h1><!-- /wp:heading -->
+		<!-- wp:group {"className":"mohfam-blog__intro","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between"}} -->
+		<div class="wp-block-group mohfam-blog__intro">
+			<!-- wp:paragraph --><p>Expert perspectives on security, maintenance, and business strategy designed for the modern Los Angeles landscape.</p><!-- /wp:paragraph -->
+			<!-- wp:search {"label":"Search resources","showLabel":false,"placeholder":"Search resources…","buttonText":"Search","buttonUseIcon":true,"className":"mohfam-blog-search"} /-->
+		</div>
+		<!-- /wp:group -->
+		<!-- wp:categories {"showPostCounts":false,"showHierarchy":false,"className":"mohfam-category-list"} /-->
+	</div>
+	<!-- /wp:group -->
+	<!-- wp:query {"queryId":21,"query":{"perPage":1,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false},"className":"mohfam-shell mohfam-featured-query"} -->
+	<div class="wp-block-query mohfam-shell mohfam-featured-query">
+		<!-- wp:post-template -->
+		<!-- wp:group {"tagName":"article","className":"mohfam-featured-post","layout":{"type":"default"}} -->
+		<article class="wp-block-group mohfam-featured-post">
+			<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"1","className":"mohfam-featured-post__image"} /-->
+			<!-- wp:group {"className":"mohfam-featured-post__content","layout":{"type":"default"}} -->
+			<div class="wp-block-group mohfam-featured-post__content">
+				<!-- wp:html --><span class="mohfam-feature-label">Featured</span><!-- /wp:html -->
+				<!-- wp:post-terms {"term":"category"} /-->
+				<!-- wp:post-title {"level":2,"isLink":true} /-->
+				<!-- wp:post-excerpt {"moreText":"Read Full Insight →","excerptLength":24} /-->
+			</div>
+			<!-- /wp:group -->
+		</article>
+		<!-- /wp:group -->
+		<!-- /wp:post-template -->
+	</div>
+	<!-- /wp:query -->
+	<!-- wp:query {"queryId":22,"query":{"perPage":6,"pages":0,"offset":1,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false},"className":"mohfam-shell mohfam-blog-grid-query"} -->
+	<div class="wp-block-query mohfam-shell mohfam-blog-grid-query">
+		<!-- wp:post-template {"className":"mohfam-blog-grid","layout":{"type":"grid","columnCount":3}} -->
+		<!-- wp:group {"tagName":"article","className":"mohfam-blog-card","layout":{"type":"default"}} -->
+		<article class="wp-block-group mohfam-blog-card">
+			<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"4/3"} /-->
+			<!-- wp:group {"className":"mohfam-blog-card__body","layout":{"type":"default"}} -->
+			<div class="wp-block-group mohfam-blog-card__body">
+				<!-- wp:group {"className":"mohfam-blog-card__meta","layout":{"type":"flex","justifyContent":"space-between"}} --><div class="wp-block-group mohfam-blog-card__meta"><!-- wp:post-terms {"term":"category"} /--><!-- wp:post-date {"format":"M j, Y"} /--></div><!-- /wp:group -->
+				<!-- wp:post-title {"level":3,"isLink":true} /-->
+				<!-- wp:post-excerpt {"moreText":"Read Article","excerptLength":16} /-->
+			</div>
+			<!-- /wp:group -->
+		</article>
+		<!-- /wp:group -->
+		<!-- /wp:post-template -->
+		<!-- wp:query-pagination {"className":"mohfam-blog-pagination","layout":{"type":"flex","justifyContent":"center"}} --><!-- wp:query-pagination-previous /--><!-- wp:query-pagination-numbers /--><!-- wp:query-pagination-next /--><!-- /wp:query-pagination -->
+		<!-- wp:query-no-results --><!-- wp:paragraph --><p>No additional articles are available yet.</p><!-- /wp:paragraph --><!-- /wp:query-no-results -->
+	</div>
+	<!-- /wp:query -->
+	<!-- wp:html -->
+	<section class="mohfam-shell mohfam-newsletter"><div><h2>Stay Ahead of the Curve</h2><p>Get practical property, business, and service insights from MohFam. Delivered monthly.</p></div><div class="mohfam-newsletter__form"><input type="email" placeholder="Email Address" aria-label="Email address"><button type="button">Subscribe</button></div></section>
+	<!-- /wp:html -->
+</main>
+<!-- /wp:group -->
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->
+

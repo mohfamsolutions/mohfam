@@ -118,40 +118,36 @@
 			</span>
 		</div>
 	</section>
-	<section class="mohfam-section mohfam-insights" id="insights">
-		<div class="mohfam-shell">
-			<div class="mohfam-insights__heading">
-				<div>
-					<span class="mohfam-eyebrow">Knowledge Base</span>
-					<h2>Insights &amp; Updates</h2>
-				</div>
-				<a href="/blog/">View All Articles →</a>
-			</div>
-			<div class="mohfam-insights__grid">
-				<article>
-					<div class="mohfam-insight-image mohfam-insight-image--security">
-					</div>
-					<span class="mohfam-eyebrow">Security</span>
-					<h3>The Future of Physical Security in LA Commercial Properties</h3>
-					<p>How integrated guarding and technology are redefining protection for corporate skyscrapers.</p>
-				</article>
-				<article>
-					<div class="mohfam-insight-image mohfam-insight-image--maintenance">
-					</div>
-					<span class="mohfam-eyebrow">Maintenance</span>
-					<h3>Maintaining Peak Facility Value Through Specialized Cleaning</h3>
-					<p>The direct correlation between professional maintenance standards and long-term asset value.</p>
-				</article>
-				<article>
-					<div class="mohfam-insight-image mohfam-insight-image--business">
-					</div>
-					<span class="mohfam-eyebrow">Business</span>
-					<h3>MohFam: Scaling Professionalism in the Southern California Market</h3>
-					<p>An update on our company growth and our commitment to the local California business ecosystem.</p>
-				</article>
-			</div>
+	</main>
+<!-- /wp:html -->
+<!-- wp:group {"tagName":"section","anchor":"insights","className":"mohfam-home mohfam-section mohfam-insights","layout":{"type":"default"}} -->
+<section id="insights" class="wp-block-group mohfam-home mohfam-section mohfam-insights">
+	<!-- wp:group {"className":"mohfam-shell","layout":{"type":"default"}} -->
+	<div class="wp-block-group mohfam-shell">
+		<!-- wp:html -->
+		<div class="mohfam-insights__heading"><div><span class="mohfam-eyebrow">Knowledge Base</span><h2>Insights &amp; Updates</h2></div><a href="/blog/">View All Articles →</a></div>
+		<!-- /wp:html -->
+		<!-- wp:query {"queryId":11,"query":{"perPage":3,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false},"className":"mohfam-home-query"} -->
+		<div class="wp-block-query mohfam-home-query">
+			<!-- wp:post-template {"className":"mohfam-insights__grid","layout":{"type":"grid","columnCount":3}} -->
+			<!-- wp:group {"tagName":"article","className":"mohfam-insight-card","layout":{"type":"default"}} -->
+			<article class="wp-block-group mohfam-insight-card">
+				<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"16/9","className":"mohfam-insight-card__image"} /-->
+				<!-- wp:post-terms {"term":"category","className":"mohfam-eyebrow"} /-->
+				<!-- wp:post-title {"level":3,"isLink":true} /-->
+				<!-- wp:post-excerpt {"moreText":"","excerptLength":18} /-->
+			</article>
+			<!-- /wp:group -->
+			<!-- /wp:post-template -->
+			<!-- wp:query-no-results --><!-- wp:paragraph --><p>Publish your first blog post to display insights here.</p><!-- /wp:paragraph --><!-- /wp:query-no-results -->
 		</div>
-	</section>
+		<!-- /wp:query -->
+	</div>
+	<!-- /wp:group -->
+</section>
+<!-- /wp:group -->
+<!-- wp:html -->
+<main class="mohfam-home mohfam-home--continued">
 	<section class="mohfam-section mohfam-contact" id="contact">
 		<div class="mohfam-shell mohfam-contact__grid">
 			<div>
