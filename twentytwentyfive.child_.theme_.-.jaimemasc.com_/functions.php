@@ -8,7 +8,10 @@
 add_action(
 	'wp_enqueue_scripts',
 	static function () {
-		$theme = wp_get_theme();
+		$stylesheet_path = get_stylesheet_directory() . '/style.css';
+		$stylesheet_version = file_exists( $stylesheet_path )
+			? (string) filemtime( $stylesheet_path )
+			: wp_get_theme()->get( 'Version' );
 
 		wp_enqueue_style(
 			'mohfam-fonts',
@@ -21,8 +24,7 @@ add_action(
 			'mohfam-child',
 			get_stylesheet_uri(),
 			array( 'mohfam-fonts' ),
-			$theme->get( 'Version' )
+			$stylesheet_version
 		);
 	}
 );
-

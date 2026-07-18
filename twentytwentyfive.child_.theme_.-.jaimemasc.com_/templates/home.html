@@ -11,7 +11,12 @@
 			<!-- wp:search {"label":"Search resources","showLabel":false,"placeholder":"Search resources…","buttonText":"Search","buttonUseIcon":true,"className":"mohfam-blog-search"} /-->
 		</div>
 		<!-- /wp:group -->
-		<!-- wp:categories {"showPostCounts":false,"showHierarchy":false,"className":"mohfam-category-list"} /-->
+		<!-- wp:group {"className":"mohfam-category-filter","layout":{"type":"flex","flexWrap":"wrap"}} -->
+		<div class="wp-block-group mohfam-category-filter">
+			<!-- wp:html --><a class="mohfam-category-filter__all" href="/blog/">All Articles</a><!-- /wp:html -->
+			<!-- wp:categories {"showPostCounts":false,"showHierarchy":false,"className":"mohfam-category-list"} /-->
+		</div>
+		<!-- /wp:group -->
 	</div>
 	<!-- /wp:group -->
 	<!-- wp:query {"queryId":21,"query":{"perPage":1,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false},"className":"mohfam-shell mohfam-featured-query"} -->
@@ -59,4 +64,3 @@
 </main>
 <!-- /wp:group -->
 <!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->
-
