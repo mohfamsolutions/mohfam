@@ -1,0 +1,45 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+<!-- wp:group {"tagName":"main","className":"mohfam-category-archive","layout":{"type":"default"}} -->
+<main class="wp-block-group mohfam-category-archive">
+	<!-- wp:group {"className":"mohfam-shell mohfam-category-archive__header","layout":{"type":"default"}} -->
+	<div class="wp-block-group mohfam-shell mohfam-category-archive__header">
+		<!-- wp:html --><span class="mohfam-eyebrow">Insights &amp; Updates</span><!-- /wp:html -->
+		<!-- wp:query-title {"type":"archive","showPrefix":true} /-->
+		<!-- wp:term-description /-->
+	</div>
+	<!-- /wp:group -->
+	<!-- wp:query {"queryId":31,"query":{"perPage":9,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":true},"className":"mohfam-shell mohfam-category-archive__query"} -->
+	<div class="wp-block-query mohfam-shell mohfam-category-archive__query">
+		<!-- wp:post-template {"className":"mohfam-blog-grid","layout":{"type":"grid","columnCount":3}} -->
+		<!-- wp:group {"tagName":"article","className":"mohfam-blog-card","layout":{"type":"default"}} -->
+		<article class="wp-block-group mohfam-blog-card">
+			<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"4/3"} /-->
+			<!-- wp:group {"className":"mohfam-blog-card__body","layout":{"type":"default"}} -->
+			<div class="wp-block-group mohfam-blog-card__body">
+				<!-- wp:group {"className":"mohfam-blog-card__meta","layout":{"type":"flex","justifyContent":"space-between"}} -->
+				<div class="wp-block-group mohfam-blog-card__meta">
+					<!-- wp:post-terms {"term":"category"} /-->
+					<!-- wp:post-date {"format":"M j, Y"} /-->
+				</div>
+				<!-- /wp:group -->
+				<!-- wp:post-title {"level":3,"isLink":true} /-->
+				<!-- wp:post-excerpt {"moreText":"Read Article","excerptLength":18} /-->
+			</div>
+			<!-- /wp:group -->
+		</article>
+		<!-- /wp:group -->
+		<!-- /wp:post-template -->
+		<!-- wp:query-pagination {"className":"mohfam-blog-pagination","layout":{"type":"flex","justifyContent":"center"}} -->
+			<!-- wp:query-pagination-previous /-->
+			<!-- wp:query-pagination-numbers /-->
+			<!-- wp:query-pagination-next /-->
+		<!-- /wp:query-pagination -->
+		<!-- wp:query-no-results -->
+			<!-- wp:paragraph --><p>No posts have been published in this category yet.</p><!-- /wp:paragraph -->
+		<!-- /wp:query-no-results -->
+	</div>
+	<!-- /wp:query -->
+</main>
+<!-- /wp:group -->
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->
+

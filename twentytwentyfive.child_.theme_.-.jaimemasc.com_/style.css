@@ -134,7 +134,8 @@ body.page-template-page-services .mohfam-nav a[href="/services/"],
 body.page-template-page-about .mohfam-nav a[href="/about/"],
 body.page-template-page-contact .mohfam-nav a[href="/contact/"],
 body.blog .mohfam-nav a[href="/blog/"],
-body.single-post .mohfam-nav a[href="/blog/"] {
+body.single-post .mohfam-nav a[href="/blog/"],
+body.category .mohfam-nav a[href="/blog/"] {
 	border-color: var(--mohfam-gold);
 	color: var(--mohfam-gold-dark);
 }
@@ -1271,10 +1272,17 @@ body.single-post .mohfam-nav a[href="/blog/"] {
 	margin-top: 50px;
 }
 
+.mohfam-category-list,
 .mohfam-category-list ul {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.mohfam-category-list li {
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -1472,7 +1480,7 @@ body.single-post .mohfam-nav a[href="/blog/"] {
 }
 
 .mohfam-single {
-	padding-top: clamp(64px, 8vw, 100px);
+	padding: clamp(64px, 8vw, 100px) 0 clamp(80px, 9vw, 120px);
 }
 
 .mohfam-single__header {
@@ -1497,9 +1505,22 @@ body.single-post .mohfam-nav a[href="/blog/"] {
 }
 
 .mohfam-single__meta {
+	column-gap: 22px !important;
+	row-gap: 10px !important;
 	border-block: 1px solid var(--mohfam-neutral);
 	padding-block: 18px;
 	font-size: 12px;
+}
+
+.mohfam-single__meta .wp-block-post-date {
+	display: inline-flex;
+	align-items: center;
+	gap: 22px;
+}
+
+.mohfam-single__meta .wp-block-post-date::before {
+	content: "•";
+	color: var(--mohfam-gold-dark);
 }
 
 .mohfam-single__meta a {
@@ -1541,8 +1562,32 @@ body.single-post .mohfam-nav a[href="/blog/"] {
 }
 
 .mohfam-newsletter--single {
-	margin-bottom: clamp(80px, 9vw, 120px);
+	margin-bottom: 0;
 	text-align: center;
+}
+
+.mohfam-category-archive {
+	padding-bottom: clamp(80px, 9vw, 120px);
+}
+
+.mohfam-category-archive__header {
+	padding-block: clamp(72px, 9vw, 110px) 54px;
+}
+
+.mohfam-category-archive__header h1 {
+	margin: 0 0 18px;
+	font-family: "Playfair Display", Georgia, serif;
+	font-size: clamp(42px, 5vw, 62px);
+	line-height: 1.12;
+}
+
+.mohfam-category-archive__header .taxonomy-description {
+	max-width: 720px;
+	color: var(--mohfam-muted);
+}
+
+.mohfam-category-archive__query {
+	padding-top: 20px;
 }
 .mohfam-post-card {
 	border-top: 1px solid var(--mohfam-neutral);
