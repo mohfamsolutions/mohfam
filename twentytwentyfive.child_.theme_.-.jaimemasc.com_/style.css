@@ -100,13 +100,23 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 	text-transform: uppercase;
 }
 
-.mohfam-header {
+header.wp-block-template-part {
 	position: sticky;
-	z-index: 50;
+	z-index: 100;
 	top: 0;
+}
+
+body.admin-bar header.wp-block-template-part {
+	top: 32px;
+}
+
+.mohfam-header {
+	position: relative;
+	z-index: 100;
 	width: 100%;
 	border-bottom: 1px solid var(--mohfam-neutral);
 	background: rgba(249,249,247,.97);
+	box-shadow: 0 1px 0 rgba(26, 26, 27, .03);
 }
 .mohfam-header__inner {
 	display: flex;
@@ -136,6 +146,72 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 	align-items: center;
 	gap: 30px;
 }
+
+.mohfam-nav__dropdown {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.mohfam-nav__dropdown-toggle span {
+	display: inline-block;
+	margin-left: 4px;
+	font-size: 13px;
+	transition: transform .2s ease;
+}
+
+.mohfam-nav__submenu {
+	position: absolute;
+	top: calc(100% + 14px);
+	left: 50%;
+	display: grid;
+	visibility: hidden;
+	min-width: 230px;
+	transform: translate(-50%, 8px);
+	border: 1px solid var(--mohfam-neutral);
+	background: var(--mohfam-white);
+	box-shadow: 0 16px 32px rgba(26, 26, 27, .12);
+	opacity: 0;
+	transition: opacity .2s ease, transform .2s ease, visibility .2s ease;
+}
+
+.mohfam-nav__submenu::before {
+	position: absolute;
+	top: -15px;
+	right: 0;
+	left: 0;
+	height: 15px;
+	content: "";
+}
+
+.mohfam-nav__submenu a {
+	border: 0;
+	padding: 13px 18px;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.mohfam-nav__submenu a + a {
+	border-top: 1px solid var(--mohfam-neutral);
+}
+
+.mohfam-nav__submenu a:hover,
+.mohfam-nav__submenu a:focus-visible {
+	border-color: transparent;
+	background: #f4f3f3;
+}
+
+.mohfam-nav__dropdown:hover .mohfam-nav__submenu,
+.mohfam-nav__dropdown:focus-within .mohfam-nav__submenu {
+	visibility: visible;
+	transform: translate(-50%, 0);
+	opacity: 1;
+}
+
+.mohfam-nav__dropdown:hover .mohfam-nav__dropdown-toggle span,
+.mohfam-nav__dropdown:focus-within .mohfam-nav__dropdown-toggle span {
+	transform: rotate(180deg);
+}
 .mohfam-nav a {
 	border-bottom: 2px solid transparent;
 	color: #46474a;
@@ -153,6 +229,8 @@ body.home .mohfam-nav a[href="/"],
 body.page-template-page-services .mohfam-nav a[href="/services/"],
 body.page-template-page-about .mohfam-nav a[href="/about/"],
 body.page-template-page-contact .mohfam-nav a[href="/contact/"],
+body.page-template-page-car-wash .mohfam-nav__dropdown-toggle,
+body.page-template-page-mohfam-security .mohfam-nav__dropdown-toggle,
 body.blog .mohfam-nav a[href="/blog/"],
 body.single-post .mohfam-nav a[href="/blog/"],
 body.category .mohfam-nav a[href="/blog/"] {
@@ -289,7 +367,7 @@ body.category .mohfam-nav a[href="/blog/"] {
 }
 .mohfam-card-grid {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(4, 1fr);
 	gap: 24px;
 }
 .mohfam-service-card {
@@ -894,11 +972,14 @@ body.category .mohfam-nav a[href="/blog/"] {
 .mohfam-about-logo,
 .mohfam-contact-logo {
 	border: 1px solid var(--mohfam-neutral);
-	background: var(--mohfam-white) url("assets/images/mohfam-logo.png") center/contain no-repeat;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
 }
 
 .mohfam-about-logo {
 	aspect-ratio: 1;
+	background-image: url("assets/images/stock-office-lounge.jpg");
 }
 
 .mohfam-cert {
@@ -1024,7 +1105,7 @@ body.category .mohfam-nav a[href="/blog/"] {
 
 .mohfam-contact-logo {
 	height: 320px;
-	filter: grayscale(1);
+	background-image: url("assets/images/stock-office-team.jpg");
 }
 
 .mohfam-contact-details h2 {
@@ -1109,8 +1190,7 @@ body.category .mohfam-nav a[href="/blog/"] {
 .mohfam-portfolio-logo {
 	aspect-ratio: 1;
 	border: 1px solid var(--mohfam-neutral);
-	background: #eee url("assets/images/mohfam-logo.png") center/contain no-repeat;
-	filter: grayscale(1);
+	background: #eee url("assets/images/stock-corporate-lobby.jpg") center/cover no-repeat;
 }
 
 .mohfam-portfolio-list {
@@ -1119,7 +1199,7 @@ body.category .mohfam-nav a[href="/blog/"] {
 
 .mohfam-portfolio-grid {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(4, 1fr);
 	gap: var(--mohfam-space-2xl) var(--mohfam-space-md);
 }
 
@@ -1234,6 +1314,14 @@ body.category .mohfam-nav a[href="/blog/"] {
 .mohfam-portfolio-cta p {
 	margin-bottom: 32px;
 	color: #aaa;
+}
+
+.mohfam-car-wash-hero {
+	background-image: linear-gradient(90deg, rgba(0,0,0,.88) 0%, rgba(0,0,0,.62) 48%, rgba(0,0,0,.18) 100%), url("assets/images/car-wash.jpg");
+}
+
+.mohfam-car-wash-page .mohfam-bento__operations {
+	background-image: linear-gradient(0deg, rgba(0,0,0,.78), rgba(0,0,0,.12)), url("assets/images/car-wash.jpg");
 }
 
 .mohfam-individual-service {
@@ -1651,7 +1739,7 @@ ul.mohfam-category-list,
 		display: none;
 	}
 	.mohfam-card-grid, .mohfam-insights__grid {
-		grid-template-columns: 1fr;
+		grid-template-columns: repeat(2, 1fr);
 	}
 	.mohfam-values__grid {
 		grid-template-columns: repeat(2, 1fr);
@@ -1717,6 +1805,12 @@ ul.mohfam-category-list,
 	}
 }
 
+@media (max-width: 782px) {
+	body.admin-bar header.wp-block-template-part {
+		top: 46px;
+	}
+}
+
 @media (max-width: 620px) {
 	.mohfam-header__inner {
 		min-height: 64px;
@@ -1768,6 +1862,11 @@ ul.mohfam-category-list,
 	}
 	.mohfam-form {
 		padding: 26px 20px;
+	}
+
+	.mohfam-card-grid,
+	.mohfam-insights__grid {
+		grid-template-columns: 1fr;
 	}
 
 	.mohfam-page-hero {

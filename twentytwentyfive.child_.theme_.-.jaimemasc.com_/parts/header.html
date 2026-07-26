@@ -2,13 +2,20 @@
 <div class="mohfam-header">
 	<div class="mohfam-shell mohfam-header__inner">
 		<a class="mohfam-brand" href="/" aria-label="MohFam home">
-		<span class="mohfam-brand__mark" aria-hidden="true">
-		</span>
-		<span>MohFam</span>
+			<span class="mohfam-brand__mark" aria-hidden="true">
+			</span>
+			<span>MohFam</span>
 		</a>
 		<nav class="mohfam-nav" aria-label="Primary navigation">
 			<a href="/">Home</a>
-			<a href="/services/">Services</a>
+			<div class="mohfam-nav__dropdown">
+				<a class="mohfam-nav__dropdown-toggle" href="/services/" aria-haspopup="true">Services <span aria-hidden="true">&#8964;</span></a>
+				<div class="mohfam-nav__submenu">
+					<a href="/services/">All Services</a>
+					<a href="/services/mohfam-security/">MohFam Security</a>
+					<a href="/services/car-wash/">Car Wash</a>
+				</div>
+			</div>
 			<a href="/about/">About</a>
 			<a href="/blog/">Blog</a>
 			<a href="/contact/">Contact</a>
