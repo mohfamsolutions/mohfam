@@ -27,6 +27,10 @@ add_action(
 			$stylesheet_version
 		);
 
+		if ( ! is_front_page() && ! is_page( 'contact' ) ) {
+			return;
+		}
+
 		$form_script_path = get_stylesheet_directory() . '/assets/js/forms.js';
 		$form_script_version = file_exists( $form_script_path )
 			? (string) filemtime( $form_script_path )
@@ -70,7 +74,7 @@ add_action(
 );
 
 /**
- * Register a private admin area for inquiry and newsletter records.
+ * Register a private admin area for inquiry records.
  */
 function mohfam_register_submission_post_type() {
 	register_post_type(
@@ -346,7 +350,7 @@ function mohfam_handle_form_submission() {
 		? sanitize_text_field( wp_unslash( $_POST['website'] ) )
 		: '';
 
-	if ( ! in_array( $form_kind, array( 'inquiry', 'newsletter' ), true ) ) {
+	if ( 'inquiry' !== $form_kind ) {
 		wp_send_json_error( array( 'message' => 'This form could not be identified.' ), 400 );
 	}
 
@@ -407,158 +411,88 @@ function mohfam_handle_form_submission() {
 		'Reply-To: MohFam <' . $admin_email . '>',
 	);
 
-	if ( 'newsletter' === $form_kind ) {
-		$existing = new WP_Query(
-			array(
-				'post_type'      => 'mohfam_submission',
-				'post_status'    => 'private',
-				'posts_per_page' => 1,
-				'fields'         => 'ids',
-				'meta_query'     => array(
-					'relation' => 'AND',
-					array(
-						'key'   => '_mohfam_form_kind',
-						'value' => 'newsletter',
-					),
-					array(
-						'key'   => '_mohfam_email',
-						'value' => $email,
-					),
-				),
-			)
-		);
+	$name = isset( $_POST['name'] )
+		? substr( sanitize_text_field( wp_unslash( $_POST['name'] ) ), 0, 120 )
+		: '';
+	$company = isset( $_POST['company'] )
+		? substr( sanitize_text_field( wp_unslash( $_POST['company'] ) ), 0, 160 )
+		: '';
+	$phone = isset( $_POST['phone'] )
+		? substr( sanitize_text_field( wp_unslash( $_POST['phone'] ) ), 0, 40 )
+		: '';
+	$service = isset( $_POST['service'] )
+		? sanitize_text_field( wp_unslash( $_POST['service'] ) )
+		: '';
+	$message = isset( $_POST['message'] )
+		? substr( sanitize_textarea_field( wp_unslash( $_POST['message'] ) ), 0, 4000 )
+		: '';
 
-		if ( $existing->have_posts() ) {
-			wp_send_json_success(
-				array( 'message' => 'You are already subscribed to MohFam Insights.' )
-			);
-		}
-
-		$post_id = mohfam_store_submission(
-			'Newsletter — ' . $email,
-			'Newsletter subscription request.',
-			array(
-				'form_kind' => 'newsletter',
-				'email'     => $email,
-				'page_url'  => $page_url,
-			)
-		);
-
-		$admin_message = mohfam_build_email_template(
-			'New newsletter subscriber',
-			'A visitor subscribed to MohFam Insights.',
-			array(
-				'Email'  => $email,
-				'Source' => $page_url,
-			),
-			'A private copy is also available under Form Submissions in WordPress.'
-		);
-		$user_message = mohfam_build_email_template(
-			'Welcome to MohFam Insights',
-			'Your subscription has been received. We will send occasional professional insights and company updates.',
-			array( 'Email' => $email ),
-			'If you did not submit this request, reply to this email and we will remove the address.'
-		);
-
-		$admin_sent = wp_mail(
-			$admin_email,
-			'[MohFam Website] New insights subscriber',
-			$admin_message,
-			array_merge(
-				array( 'Content-Type: text/html; charset=UTF-8' ),
-				array( 'Reply-To: ' . $email )
-			)
-		);
-		$user_sent = wp_mail(
-			$email,
-			'Welcome to MohFam Insights',
-			$user_message,
-			$html_headers
-		);
-	} else {
-		$name = isset( $_POST['name'] )
-			? substr( sanitize_text_field( wp_unslash( $_POST['name'] ) ), 0, 120 )
-			: '';
-		$company = isset( $_POST['company'] )
-			? substr( sanitize_text_field( wp_unslash( $_POST['company'] ) ), 0, 160 )
-			: '';
-		$phone = isset( $_POST['phone'] )
-			? substr( sanitize_text_field( wp_unslash( $_POST['phone'] ) ), 0, 40 )
-			: '';
-		$service = isset( $_POST['service'] )
-			? sanitize_text_field( wp_unslash( $_POST['service'] ) )
-			: '';
-		$message = isset( $_POST['message'] )
-			? substr( sanitize_textarea_field( wp_unslash( $_POST['message'] ) ), 0, 4000 )
-			: '';
-
-		if ( '' === $name || '' === $service || '' === $message ) {
-			wp_send_json_error(
-				array( 'message' => 'Please complete your name, service interest, and message.' ),
-				422
-			);
-		}
-
-		$post_id = mohfam_store_submission(
-			'Inquiry — ' . $name . ' — ' . current_time( 'M j, Y g:i a' ),
-			$message,
-			array(
-				'form_kind' => 'inquiry',
-				'name'      => $name,
-				'company'   => $company,
-				'email'     => $email,
-				'phone'     => $phone,
-				'service'   => $service,
-				'page_url'  => $page_url,
-			)
-		);
-
-		$admin_message = mohfam_build_email_template(
-			'New website inquiry',
-			'A prospective client submitted an inquiry through the MohFam website.',
-			array(
-				'Name'     => $name,
-				'Company'  => $company,
-				'Email'    => $email,
-				'Phone'    => $phone,
-				'Service'  => $service,
-				'Message'  => $message,
-				'Source'   => $page_url,
-			),
-			'Reply directly to this email to contact the sender. A private copy is also available under Form Submissions in WordPress.'
-		);
-		$user_message = mohfam_build_email_template(
-			'We received your inquiry',
-			'Thank you for contacting MohFam. Our team has received your request and will review it promptly.',
-			array(
-				'Name'    => $name,
-				'Service' => $service,
-				'Message' => $message,
-			),
-			'For immediate assistance, call +1 (818) 818-1181 or email info@mohfamsecurity.com.'
-		);
-
-		$admin_subject = sprintf(
-			'[MohFam Website] New %1$s inquiry from %2$s',
-			$service,
-			$name
-		);
-		$admin_sent = wp_mail(
-			$admin_email,
-			$admin_subject,
-			$admin_message,
-			array(
-				'Content-Type: text/html; charset=UTF-8',
-				'Reply-To: ' . $name . ' <' . $email . '>',
-			)
-		);
-		$user_sent = wp_mail(
-			$email,
-			'We received your MohFam inquiry',
-			$user_message,
-			$html_headers
+	if ( '' === $name || '' === $service || '' === $message ) {
+		wp_send_json_error(
+			array( 'message' => 'Please complete your name, service interest, and message.' ),
+			422
 		);
 	}
+
+	$post_id = mohfam_store_submission(
+		'Inquiry — ' . $name . ' — ' . current_time( 'M j, Y g:i a' ),
+		$message,
+		array(
+			'form_kind' => 'inquiry',
+			'name'      => $name,
+			'company'   => $company,
+			'email'     => $email,
+			'phone'     => $phone,
+			'service'   => $service,
+			'page_url'  => $page_url,
+		)
+	);
+
+	$admin_message = mohfam_build_email_template(
+		'New website inquiry',
+		'A prospective client submitted an inquiry through the MohFam website.',
+		array(
+			'Name'     => $name,
+			'Company'  => $company,
+			'Email'    => $email,
+			'Phone'    => $phone,
+			'Service'  => $service,
+			'Message'  => $message,
+			'Source'   => $page_url,
+		),
+		'Reply directly to this email to contact the sender. A private copy is also available under Form Submissions in WordPress.'
+	);
+	$user_message = mohfam_build_email_template(
+		'We received your inquiry',
+		'Thank you for contacting MohFam. Our team has received your request and will review it promptly.',
+		array(
+			'Name'    => $name,
+			'Service' => $service,
+			'Message' => $message,
+		),
+		'For immediate assistance, call +1 (818) 818-1181 or email info@mohfamsecurity.com.'
+	);
+
+	$admin_subject = sprintf(
+		'[MohFam Website] New %1$s inquiry from %2$s',
+		$service,
+		$name
+	);
+	$admin_sent = wp_mail(
+		$admin_email,
+		$admin_subject,
+		$admin_message,
+		array(
+			'Content-Type: text/html; charset=UTF-8',
+			'Reply-To: ' . $name . ' <' . $email . '>',
+		)
+	);
+	$user_sent = wp_mail(
+		$email,
+		'We received your MohFam inquiry',
+		$user_message,
+		$html_headers
+	);
 
 	if ( ! is_wp_error( $post_id ) ) {
 		update_post_meta( $post_id, '_mohfam_admin_mail_sent', (bool) $admin_sent );
@@ -576,9 +510,7 @@ function mohfam_handle_form_submission() {
 
 	wp_send_json_success(
 		array(
-			'message' => 'newsletter' === $form_kind
-				? 'Thank you for subscribing. Please check your inbox for confirmation.'
-				: 'Thank you. Your inquiry was sent successfully, and a confirmation is on its way to your email.',
+			'message' => 'Thank you. Your inquiry was sent successfully, and a confirmation is on its way to your email.',
 		)
 	);
 }
