@@ -18,7 +18,34 @@
 	<!-- wp:group {"className":"mohfam-single__footer","layout":{"type":"constrained","contentSize":"720px"}} -->
 	<div class="wp-block-group mohfam-single__footer">
 		<!-- wp:separator --><hr class="wp-block-separator has-alpha-channel-opacity"/><!-- /wp:separator -->
-		<!-- wp:group {"layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between"}} --><div class="wp-block-group"><!-- wp:paragraph --><p>Share this article</p><!-- /wp:paragraph --><!-- wp:post-terms {"term":"post_tag"} /--></div><!-- /wp:group -->
+		<!-- wp:html -->
+		<section class="mohfam-share js-mohfam-share" aria-labelledby="mohfam-share-title">
+			<p id="mohfam-share-title" class="mohfam-share__title">Share this article</p>
+			<div class="mohfam-share__actions">
+				<button class="mohfam-share__button mohfam-share__native" type="button" data-share-action="native" hidden>
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 11v8h14v-8"/></svg>
+					<span>Share</span>
+				</button>
+				<button class="mohfam-share__button" type="button" data-share-action="copy">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1 0l-2 2A5 5 0 0 0 12 20.1l1.1-1.1"/></svg>
+					<span>Copy link</span>
+				</button>
+				<a class="mohfam-share__button" href="#" data-share-service="facebook" target="_blank" rel="noopener noreferrer">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M14 8h3V4h-3c-3 0-5 2-5 5v3H6v4h3v5h4v-5h3l1-4h-4V9c0-.6.4-1 1-1Z"/></svg>
+					<span>Facebook</span>
+				</a>
+				<a class="mohfam-share__button" href="#" data-share-service="linkedin" target="_blank" rel="noopener noreferrer">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9v11M6 5.5v.1M10.5 20v-6.5a4 4 0 0 1 8 0V20M10.5 9v11"/></svg>
+					<span>LinkedIn</span>
+				</a>
+				<a class="mohfam-share__button" href="#" data-share-service="email">
+					<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 7l9 7 9-7"/></svg>
+					<span>Email</span>
+				</a>
+			</div>
+			<p class="mohfam-share__status" aria-live="polite"></p>
+		</section>
+		<!-- /wp:html -->
 	</div>
 	<!-- /wp:group -->
 </main>

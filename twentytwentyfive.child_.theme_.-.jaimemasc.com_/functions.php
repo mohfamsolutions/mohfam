@@ -27,6 +27,21 @@ add_action(
 			$stylesheet_version
 		);
 
+		if ( is_singular( 'post' ) ) {
+			$share_script_path = get_stylesheet_directory() . '/assets/js/blog-share.js';
+			$share_script_version = file_exists( $share_script_path )
+				? (string) filemtime( $share_script_path )
+				: wp_get_theme()->get( 'Version' );
+
+			wp_enqueue_script(
+				'mohfam-blog-share',
+				get_stylesheet_directory_uri() . '/assets/js/blog-share.js',
+				array(),
+				$share_script_version,
+				true
+			);
+		}
+
 		if ( ! is_front_page() && ! is_page( 'contact' ) ) {
 			return;
 		}
