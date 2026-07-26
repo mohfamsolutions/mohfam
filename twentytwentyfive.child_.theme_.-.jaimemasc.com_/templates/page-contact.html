@@ -9,30 +9,35 @@
 				<p>Whether you require bespoke security solutions, specialized cleaning, or facility management in Los Angeles, our team is ready to deliver excellence. Expect a response within 4 business hours.</p>
 			</div>
 			<div class="mohfam-contact-layout">
-				<div class="mohfam-inquiry-form" role="form" aria-label="Contact inquiry form">
+				<form class="mohfam-inquiry-form js-mohfam-form" aria-label="Contact inquiry form">
+					<input type="hidden" name="form_kind" value="inquiry">
+					<label class="mohfam-honeypot" aria-hidden="true">Website
+						<input type="text" name="website" tabindex="-1" autocomplete="off">
+					</label>
 					<div class="mohfam-form-row">
-						<label>Name<input type="text" placeholder="Full Name">
+						<label>Name<input type="text" name="name" placeholder="Full Name" autocomplete="name" maxlength="120" required>
 						</label>
-						<label>Company<input type="text" placeholder="Organization Name">
+						<label>Company<input type="text" name="company" placeholder="Organization Name" autocomplete="organization" maxlength="160">
 						</label>
 					</div>
 					<div class="mohfam-form-row">
-						<label>Email<input type="email" placeholder="email@address.com">
+						<label>Email<input type="email" name="email" placeholder="email@address.com" autocomplete="email" required>
 						</label>
-						<label>Phone<input type="tel" placeholder="+1 (818) 818-1181">
+						<label>Phone<input type="tel" name="phone" placeholder="+1 (818) 818-1181" autocomplete="tel" maxlength="40">
 						</label>
 					</div>
-					<label>Primary Service Interest<select>
-					<option>Select a service…</option>
-					<option>Private Security &amp; Patrol</option>
-					<option>Car Wash &amp; Vehicle Detailing (Waitlist)</option>
+					<label>Primary Service Interest<select name="service" required>
+					<option value="">Select a service…</option>
+					<option value="Private Security &amp; Patrol">Private Security &amp; Patrol</option>
+					<option value="Car Wash &amp; Vehicle Detailing (Waitlist)">Car Wash &amp; Vehicle Detailing (Waitlist)</option>
 					</select>
 					</label>
-					<label>Message<textarea rows="5" placeholder="How can we assist your business today?">
+					<label>Message<textarea name="message" rows="5" placeholder="How can we assist your business today?" maxlength="4000" required>
 					</textarea>
 					</label>
-					<button class="mohfam-button" type="button">Submit Inquiry →</button>
-				</div>
+					<button class="mohfam-button" type="submit">Submit Inquiry →</button>
+					<p class="mohfam-form-status" aria-live="polite"></p>
+				</form>
 				<aside class="mohfam-contact-details">
 					<div class="mohfam-contact-logo" role="img" aria-label="Professional Los Angeles office">
 					</div>
@@ -40,6 +45,10 @@
 					<dl>
 						<dt>Corporate Office</dt>
 						<dd>Los Angeles, CA</dd>
+						<dt>Phone</dt>
+						<dd><a href="tel:+18188181181">+1 (818) 818-1181</a></dd>
+						<dt>Email</dt>
+						<dd><a href="mailto:info@mohfamsecurity.com">info@mohfamsecurity.com</a></dd>
 						<dt>Standard Operations</dt>
 						<dd>Mon–Fri: 8:00 AM–6:00 PM PST<br>24/7 Dispatch Available for Clients</dd>
 					</dl>

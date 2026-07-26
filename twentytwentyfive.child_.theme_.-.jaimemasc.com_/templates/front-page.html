@@ -169,28 +169,34 @@
 					<dd><a href="tel:+18188181181">+1 (818) 818-1181</a></dd>
 					<dt>General Inquiries</dt>
 					<dd>
-					<a href="mailto:info@mohfam.com">info@mohfam.com</a>
+					<a href="mailto:info@mohfamsecurity.com">info@mohfamsecurity.com</a>
 					</dd>
 				</dl>
 			</div>
-			<div class="mohfam-form" role="form" aria-label="Quote request form">
-				<label>Full Name<input type="text" placeholder="Enter your name">
+			<form class="mohfam-form js-mohfam-form" aria-label="Quote request form">
+				<input type="hidden" name="form_kind" value="inquiry">
+				<label class="mohfam-honeypot" aria-hidden="true">Website
+					<input type="text" name="website" tabindex="-1" autocomplete="off">
 				</label>
-				<label>Email Address<input type="email" placeholder="name@company.com">
+				<label>Full Name<input type="text" name="name" placeholder="Enter your name" autocomplete="name" maxlength="120" required>
 				</label>
-				<label>Service Interest<select>
-				<option>Security Services</option>
-				<option>Car Wash &amp; Vehicle Detailing (Waitlist)</option>
-				<option>Pool Cleaning (Waitlist)</option>
-				<option>Commercial Cleaning (Waitlist)</option>
-				<option>General Inquiry</option>
+				<label>Email Address<input type="email" name="email" placeholder="name@company.com" autocomplete="email" required>
+				</label>
+				<label>Service Interest<select name="service" required>
+				<option value="">Select a service…</option>
+				<option value="Security Services">Security Services</option>
+				<option value="Car Wash &amp; Vehicle Detailing (Waitlist)">Car Wash &amp; Vehicle Detailing (Waitlist)</option>
+				<option value="Pool Cleaning (Waitlist)">Pool Cleaning (Waitlist)</option>
+				<option value="Commercial Cleaning (Waitlist)">Commercial Cleaning (Waitlist)</option>
+				<option value="General Inquiry">General Inquiry</option>
 				</select>
 				</label>
-				<label>Project Details<textarea rows="4" placeholder="How can we assist you?">
+				<label>Project Details<textarea name="message" rows="4" placeholder="How can we assist you?" maxlength="4000" required>
 				</textarea>
 				</label>
-				<button class="mohfam-button" type="button">Submit Request</button>
-			</div>
+				<button class="mohfam-button" type="submit">Submit Request</button>
+				<p class="mohfam-form-status" aria-live="polite"></p>
+			</form>
 		</div>
 	</section>
 </main>
