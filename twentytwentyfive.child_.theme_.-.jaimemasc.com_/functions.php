@@ -31,11 +31,27 @@ add_action(
 		$form_script_version = file_exists( $form_script_path )
 			? (string) filemtime( $form_script_path )
 			: wp_get_theme()->get( 'Version' );
+		$turnstile_enabled = defined( 'MOHFAM_TURNSTILE_SITE_KEY' )
+			&& defined( 'MOHFAM_TURNSTILE_SECRET_KEY' )
+			&& '' !== MOHFAM_TURNSTILE_SITE_KEY
+			&& '' !== MOHFAM_TURNSTILE_SECRET_KEY;
+		$form_script_dependencies = array();
+
+		if ( $turnstile_enabled ) {
+			wp_enqueue_script(
+				'cloudflare-turnstile',
+				'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
+				array(),
+				null,
+				true
+			);
+			$form_script_dependencies[] = 'cloudflare-turnstile';
+		}
 
 		wp_enqueue_script(
 			'mohfam-forms',
 			get_stylesheet_directory_uri() . '/assets/js/forms.js',
-			array(),
+			$form_script_dependencies,
 			$form_script_version,
 			true
 		);
@@ -44,8 +60,10 @@ add_action(
 			'mohfam-forms',
 			'mohfamForms',
 			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'mohfam_form_submission' ),
+				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+				'nonce'            => wp_create_nonce( 'mohfam_form_submission' ),
+				'turnstileEnabled' => $turnstile_enabled,
+				'turnstileSiteKey' => $turnstile_enabled ? MOHFAM_TURNSTILE_SITE_KEY : '',
 			)
 		);
 	}
@@ -249,6 +267,68 @@ function mohfam_store_submission( $title, $message, $meta ) {
 }
 
 /**
+ * Validate a Cloudflare Turnstile token.
+ *
+ * @param string $token      Turnstile response token.
+ * @param string $ip_address Visitor IP address.
+ * @return true|\WP_Error
+ */
+function mohfam_validate_turnstile( $token, $ip_address ) {
+	if (
+		! defined( 'MOHFAM_TURNSTILE_SITE_KEY' )
+		|| ! defined( 'MOHFAM_TURNSTILE_SECRET_KEY' )
+		|| '' === MOHFAM_TURNSTILE_SITE_KEY
+		|| '' === MOHFAM_TURNSTILE_SECRET_KEY
+	) {
+		return new WP_Error( 'turnstile_not_configured', 'Turnstile is not configured.' );
+	}
+
+	if ( '' === $token || 2048 < strlen( $token ) ) {
+		return new WP_Error( 'turnstile_token_missing', 'The Turnstile token is missing or invalid.' );
+	}
+
+	$response = wp_remote_post(
+		'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+		array(
+			'timeout' => 10,
+			'body'    => array(
+				'secret'   => MOHFAM_TURNSTILE_SECRET_KEY,
+				'response' => $token,
+				'remoteip' => $ip_address,
+			),
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return new WP_Error( 'turnstile_unavailable', 'Turnstile verification is temporarily unavailable.' );
+	}
+
+	$result = json_decode( wp_remote_retrieve_body( $response ), true );
+
+	if ( ! is_array( $result ) || empty( $result['success'] ) ) {
+		return new WP_Error( 'turnstile_failed', 'Turnstile verification failed.' );
+	}
+
+	$expected_hostname = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+	$verified_hostname = isset( $result['hostname'] )
+		? strtolower( sanitize_text_field( $result['hostname'] ) )
+		: '';
+	$verified_action = isset( $result['action'] )
+		? sanitize_key( $result['action'] )
+		: '';
+
+	if ( '' === $expected_hostname || $expected_hostname !== $verified_hostname ) {
+		return new WP_Error( 'turnstile_hostname_mismatch', 'Turnstile hostname verification failed.' );
+	}
+
+	if ( 'mohfam_form' !== $verified_action ) {
+		return new WP_Error( 'turnstile_action_mismatch', 'Turnstile action verification failed.' );
+	}
+
+	return true;
+}
+
+/**
  * Handle all public MohFam forms.
  */
 function mohfam_handle_form_submission() {
@@ -276,6 +356,29 @@ function mohfam_handle_form_submission() {
 		);
 	}
 
+	$ip_address = isset( $_SERVER['REMOTE_ADDR'] )
+		? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
+		: '';
+	$turnstile_token = isset( $_POST['cf-turnstile-response'] )
+		? sanitize_text_field( wp_unslash( $_POST['cf-turnstile-response'] ) )
+		: '';
+	$turnstile_result = mohfam_validate_turnstile( $turnstile_token, $ip_address );
+
+	if ( is_wp_error( $turnstile_result ) ) {
+		$status_code = 'turnstile_not_configured' === $turnstile_result->get_error_code()
+			? 503
+			: 403;
+
+		wp_send_json_error(
+			array(
+				'message' => 503 === $status_code
+					? 'Security verification is temporarily unavailable. Please contact us directly.'
+					: 'Security verification failed. Please refresh the page and try again.',
+			),
+			$status_code
+		);
+	}
+
 	$email = isset( $_POST['email'] )
 		? sanitize_email( wp_unslash( $_POST['email'] ) )
 		: '';
@@ -284,9 +387,6 @@ function mohfam_handle_form_submission() {
 		wp_send_json_error( array( 'message' => 'Please enter a valid email address.' ), 422 );
 	}
 
-	$ip_address = isset( $_SERVER['REMOTE_ADDR'] )
-		? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
-		: 'unknown';
 	$rate_key = 'mohfam_form_' . md5( wp_hash( $ip_address . '|' . $form_kind ) );
 
 	if ( get_transient( $rate_key ) ) {

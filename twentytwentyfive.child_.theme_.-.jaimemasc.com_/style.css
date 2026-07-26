@@ -701,6 +701,12 @@ body.category .mohfam-nav a[href="/blog/"] {
 	white-space: nowrap !important;
 }
 
+.mohfam-turnstile {
+	grid-column: 1 / -1;
+	width: 100%;
+	min-height: 65px;
+}
+
 .mohfam-form-status {
 	grid-column: 1 / -1;
 	width: 100%;
@@ -1685,6 +1691,15 @@ ul.mohfam-category-list,
 
 .mohfam-newsletter__form .mohfam-form-status {
 	flex: 1 0 100%;
+}
+
+.mohfam-newsletter__form .mohfam-turnstile {
+	flex: 1 0 100%;
+}
+
+.mohfam-newsletter--single .mohfam-turnstile {
+	display: flex;
+	justify-content: center;
 }
 
 .mohfam-single {
