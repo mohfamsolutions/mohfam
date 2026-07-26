@@ -93,28 +93,6 @@ function mohfam_register_submission_post_type() {
 add_action( 'init', 'mohfam_register_submission_post_type' );
 
 /**
- * Send WordPress mail through the GoDaddy hosting relay.
- *
- * The site is hosted on GoDaddy and both MohFam domains authorize
- * secureserver.net in SPF. GoDaddy's hosting relay does not use SMTP
- * authentication or transport encryption on port 25.
- *
- * @param \PHPMailer\PHPMailer\PHPMailer $phpmailer WordPress mailer instance.
- */
-function mohfam_configure_mail_transport( $phpmailer ) {
-	$phpmailer->isSMTP();
-	$phpmailer->Host        = 'relay-hosting.secureserver.net';
-	$phpmailer->Port        = 25;
-	$phpmailer->SMTPAuth    = false;
-	$phpmailer->SMTPSecure  = '';
-	$phpmailer->SMTPAutoTLS = false;
-	$phpmailer->Timeout     = 20;
-	$phpmailer->setFrom( 'info@mohfamsecurity.com', 'MohFam Website', false );
-	$phpmailer->Sender = 'info@mohfamsecurity.com';
-}
-add_action( 'phpmailer_init', 'mohfam_configure_mail_transport' );
-
-/**
  * Preserve the latest transport error for an administrator diagnostic notice.
  *
  * @param \WP_Error $error WordPress mail error.
