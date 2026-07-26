@@ -93,6 +93,65 @@ function mohfam_register_submission_post_type() {
 add_action( 'init', 'mohfam_register_submission_post_type' );
 
 /**
+ * Send WordPress mail through the GoDaddy hosting relay.
+ *
+ * The site is hosted on GoDaddy and both MohFam domains authorize
+ * secureserver.net in SPF. GoDaddy's hosting relay does not use SMTP
+ * authentication or transport encryption on port 25.
+ *
+ * @param \PHPMailer\PHPMailer\PHPMailer $phpmailer WordPress mailer instance.
+ */
+function mohfam_configure_mail_transport( $phpmailer ) {
+	$phpmailer->isSMTP();
+	$phpmailer->Host        = 'relay-hosting.secureserver.net';
+	$phpmailer->Port        = 25;
+	$phpmailer->SMTPAuth    = false;
+	$phpmailer->SMTPSecure  = '';
+	$phpmailer->SMTPAutoTLS = false;
+	$phpmailer->Timeout     = 20;
+	$phpmailer->setFrom( 'info@mohfamsecurity.com', 'MohFam Website', false );
+	$phpmailer->Sender = 'info@mohfamsecurity.com';
+}
+add_action( 'phpmailer_init', 'mohfam_configure_mail_transport' );
+
+/**
+ * Preserve the latest transport error for an administrator diagnostic notice.
+ *
+ * @param \WP_Error $error WordPress mail error.
+ */
+function mohfam_capture_mail_error( $error ) {
+	set_transient(
+		'mohfam_last_mail_error',
+		sanitize_text_field( $error->get_error_message() ),
+		HOUR_IN_SECONDS
+	);
+}
+add_action( 'wp_mail_failed', 'mohfam_capture_mail_error' );
+
+/**
+ * Show a one-time mail transport error to administrators.
+ */
+function mohfam_mail_error_admin_notice() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	$error = get_transient( 'mohfam_last_mail_error' );
+
+	if ( ! $error ) {
+		return;
+	}
+
+	delete_transient( 'mohfam_last_mail_error' );
+
+	printf(
+		'<div class="notice notice-error is-dismissible"><p><strong>MohFam email delivery error:</strong> %s</p></div>',
+		esc_html( $error )
+	);
+}
+add_action( 'admin_notices', 'mohfam_mail_error_admin_notice' );
+
+/**
  * Add a readable details panel to saved form submissions.
  */
 function mohfam_add_submission_meta_box() {
