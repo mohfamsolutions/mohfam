@@ -1069,11 +1069,13 @@ body.category .mohfam-nav a[href="/blog/"] {
 .mohfam-contact-layout {
 	display: grid;
 	grid-template-columns: minmax(0, 1.35fr) minmax(320px, .95fr);
+	align-items: start;
 	gap: 28px;
 }
 
 .mohfam-inquiry-form {
 	display: grid;
+	align-self: start;
 	align-content: start;
 	gap: 26px;
 	border: 1px solid var(--mohfam-neutral);
