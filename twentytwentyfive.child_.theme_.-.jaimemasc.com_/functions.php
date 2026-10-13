@@ -443,7 +443,7 @@ function mohfam_handle_form_submission() {
 
 	set_transient( $rate_key, 1, 20 );
 
-	$admin_email = 'info@mohfamsecurity.com';
+	$admin_email = 'mohfamsolutions@gmail.com';
 	$page_url = isset( $_POST['page_url'] )
 		? esc_url_raw( wp_unslash( $_POST['page_url'] ) )
 		: home_url( '/' );
@@ -511,7 +511,7 @@ function mohfam_handle_form_submission() {
 			'Service' => $service,
 			'Message' => $message,
 		),
-		'For immediate assistance, call +1 (818) 818-1181 or email info@mohfamsecurity.com.'
+		'For immediate assistance, call +1 (818) 818-1181 or email mohfamsolutions@gmail.com.'
 	);
 
 	$admin_subject = sprintf(
@@ -543,7 +543,7 @@ function mohfam_handle_form_submission() {
 	if ( ! $admin_sent || ! $user_sent ) {
 		wp_send_json_error(
 			array(
-				'message' => 'Your submission was saved, but an email could not be sent. Please call +1 (818) 818-1181 or email info@mohfamsecurity.com.',
+				'message' => 'Your submission was saved, but an email could not be sent. Please call +1 (818) 818-1181 or email mohfamsolutions@gmail.com.',
 			),
 			500
 		);
