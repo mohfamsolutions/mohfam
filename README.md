@@ -2,6 +2,14 @@
 
 WordPress Twenty Twenty-Five child theme in `twentytwentyfive.child_.theme_.-.jaimemasc.com_/`.
 
+## Site design and service availability
+
+The current service order is Security, Commercial Cleaning, Pool Cleaning, Landscaping, and Car Wash. The last three are marked Coming Soon. Commercial cleaning links to https://mohfamcleaning.com/.
+
+Shared navigation is in `parts/header.html` with progressive enhancement in `assets/js/navigation.js`. The homepage's shared app panel is in `parts/app.html`; its existing app artwork is stored locally under `assets/images`. Shared design refinements are in `assets/css/experience.css`, loaded after the base stylesheet. Both styles and scripts use file timestamps for cache invalidation.
+
+See [the design audit](docs/design-audit.md) for resolved findings, rendered verification, and remaining design priorities.
+
 ## Automatic theme deployment
 
 `.github/workflows/deploy-mohfam.yml` deploys the theme on every push to `main`, after checking PHP, JavaScript, and theme JSON syntax. It also supports a manual run from GitHub Actions on `main`.

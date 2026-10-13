@@ -27,6 +27,23 @@ add_action(
 			$stylesheet_version
 		);
 
+		$experience_stylesheet_path = get_stylesheet_directory() . '/assets/css/experience.css';
+		wp_enqueue_style(
+			'mohfam-experience',
+			get_stylesheet_directory_uri() . '/assets/css/experience.css',
+			array( 'mohfam-child' ),
+			file_exists( $experience_stylesheet_path ) ? (string) filemtime( $experience_stylesheet_path ) : wp_get_theme()->get( 'Version' )
+		);
+
+		$navigation_script_path = get_stylesheet_directory() . '/assets/js/navigation.js';
+		wp_enqueue_script(
+			'mohfam-navigation',
+			get_stylesheet_directory_uri() . '/assets/js/navigation.js',
+			array(),
+			file_exists( $navigation_script_path ) ? (string) filemtime( $navigation_script_path ) : wp_get_theme()->get( 'Version' ),
+			true
+		);
+
 		if ( is_singular( 'post' ) ) {
 			$share_script_path = get_stylesheet_directory() . '/assets/js/blog-share.js';
 			$share_script_version = file_exists( $share_script_path )

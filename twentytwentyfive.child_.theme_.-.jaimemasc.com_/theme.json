@@ -54,7 +54,8 @@
   },
   "templateParts": [
     { "area": "header", "name": "header", "title": "MohFam Header" },
-    { "area": "footer", "name": "footer", "title": "MohFam Footer" }
+    { "area": "footer", "name": "footer", "title": "MohFam Footer" },
+    { "area": "uncategorized", "name": "app", "title": "MohFam App" }
   ],
   "customTemplates": [
     {

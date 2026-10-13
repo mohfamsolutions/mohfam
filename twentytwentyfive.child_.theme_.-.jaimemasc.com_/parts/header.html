@@ -1,23 +1,32 @@
 <!-- wp:html -->
 <div class="mohfam-header">
+	<a class="mohfam-skip-link" href="#main-content">Skip to content</a>
 	<div class="mohfam-shell mohfam-header__inner">
 		<a class="mohfam-brand" href="/" aria-label="MohFam home">
 			<span class="mohfam-brand__mark" aria-hidden="true">
 			</span>
 			<span>MohFam</span>
 		</a>
-		<nav class="mohfam-nav" aria-label="Primary navigation">
+		<button class="mohfam-menu-toggle" type="button" aria-expanded="false" aria-controls="mohfam-primary-nav" hidden>Menu <span aria-hidden="true">☰</span></button>
+		<nav class="mohfam-nav" id="mohfam-primary-nav" aria-label="Primary navigation">
 			<a href="/">Home</a>
 			<div class="mohfam-nav__dropdown">
-				<a class="mohfam-nav__dropdown-toggle" href="/services/" aria-haspopup="true">Services</a>
-				<div class="mohfam-nav__submenu">
+				<a class="mohfam-nav__dropdown-toggle" href="/services/">Services</a>
+				<button class="mohfam-submenu-toggle" type="button" aria-expanded="false" aria-controls="mohfam-service-links" aria-label="Show service links" hidden><span aria-hidden="true">⌄</span></button>
+				<div class="mohfam-nav__submenu" id="mohfam-service-links">
 					<a href="/services/">All Services</a>
 					<a href="/services/mohfam-security/">MohFam Security</a>
+					<a href="https://mohfamcleaning.com/">Commercial Cleaning</a>
+					<a href="/services/#pool-cleaning">Pool Cleaning <small>Coming soon</small></a>
+					<a href="/services/#landscaping">Landscaping <small>Coming soon</small></a>
+					<a href="/services/#car-wash">Car Wash <small>Coming soon</small></a>
 				</div>
 			</div>
 			<a href="/about/">About</a>
 			<a href="/blog/">Blog</a>
+			<a href="/#mohfam-app">The App</a>
 			<a href="/contact/">Contact</a>
+			<a class="mohfam-nav__quote" href="/contact/#inquiry">Request a Quote</a>
 		</nav>
 		<a class="mohfam-button mohfam-button--small" href="/contact/">Request a Quote</a>
 	</div>

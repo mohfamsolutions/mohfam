@@ -56,8 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           find twentytwentyfive.child_.theme_.-.jaimemasc.com_ -type f -name '*.php' -print0 | xargs -0 -r -n 1 php -l
-          node --check twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/js/forms.js
-          node --check twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/js/blog-share.js
+          find twentytwentyfive.child_.theme_.-.jaimemasc.com_ -type f -name '*.js' -print0 | xargs -0 -r -n 1 node --check
           node -e "JSON.parse(require('node:fs').readFileSync('twentytwentyfive.child_.theme_.-.jaimemasc.com_/theme.json', 'utf8'))"
 
       - name: Deploy MohFam child theme over FTPS
