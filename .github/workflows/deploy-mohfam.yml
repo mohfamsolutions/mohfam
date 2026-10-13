@@ -1,0 +1,76 @@
+name: Deploy MohFam theme
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mohfam-theme-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out theme
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Validate deployment settings
+        env:
+          MOHFAM_FTP_SERVER: ${{ secrets.MOHFAM_FTP_SERVER }}
+          MOHFAM_FTP_USERNAME: ${{ secrets.MOHFAM_FTP_USERNAME }}
+          MOHFAM_FTP_PASSWORD: ${{ secrets.MOHFAM_FTP_PASSWORD }}
+          MOHFAM_FTP_SERVER_DIR: wp-content/themes/twentytwentyfive.child_.theme_.-.jaimemasc.com_/
+        run: |
+          set -euo pipefail
+          for setting in MOHFAM_FTP_SERVER MOHFAM_FTP_USERNAME MOHFAM_FTP_PASSWORD MOHFAM_FTP_SERVER_DIR; do
+            if [[ -z "${!setting}" ]]; then
+              echo "::error::Missing $setting. See README.md for MohFam deployment setup."
+              exit 1
+            fi
+          done
+          case "$MOHFAM_FTP_SERVER_DIR" in
+            *../*|*//* )
+              echo "::error::Deployment directory must not contain traversal or repeated slashes."
+              exit 1
+              ;;
+          esac
+          case "$MOHFAM_FTP_SERVER_DIR" in
+            wp-content/themes/twentytwentyfive.child_.theme_.-.jaimemasc.com_/|*/wp-content/themes/twentytwentyfive.child_.theme_.-.jaimemasc.com_/)
+              ;;
+            *)
+              echo "::error::Deployment directory must point to the MohFam child theme under wp-content/themes and end with a slash."
+              exit 1
+              ;;
+          esac
+
+      - name: Check theme syntax
+        run: |
+          set -euo pipefail
+          find twentytwentyfive.child_.theme_.-.jaimemasc.com_ -type f -name '*.php' -print0 | xargs -0 -r -n 1 php -l
+          node --check twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/js/forms.js
+          node --check twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/js/blog-share.js
+          node -e "JSON.parse(require('node:fs').readFileSync('twentytwentyfive.child_.theme_.-.jaimemasc.com_/theme.json', 'utf8'))"
+
+      - name: Deploy MohFam child theme over FTPS
+        uses: SamKirkland/FTP-Deploy-Action@110f9186c050f71550953127052e77650219c287 # v4.4.0
+        with:
+          server: ${{ secrets.MOHFAM_FTP_SERVER }}
+          username: ${{ secrets.MOHFAM_FTP_USERNAME }}
+          password: ${{ secrets.MOHFAM_FTP_PASSWORD }}
+          port: 21
+          protocol: ftps
+          security: strict
+          local-dir: ./twentytwentyfive.child_.theme_.-.jaimemasc.com_/
+          server-dir: wp-content/themes/twentytwentyfive.child_.theme_.-.jaimemasc.com_/
+          state-name: .mohfam-theme-sync-state.json
+          dangerous-clean-slate: false
+          log-level: minimal
