@@ -178,6 +178,9 @@ img { max-width: 100%; }
 /* Service discovery, practical next steps, and shared interaction polish. */
 .mohfam-reading-progress { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; pointer-events: none; }
 .mohfam-reading-progress span { display: block; width: 100%; height: 100%; background: var(--mohfam-gold); transform: scaleX(0); transform-origin: left; }
+.mohfam-scroll-header { transition: transform .28s cubic-bezier(.22, .61, .36, 1); }
+.mohfam-scroll-header.is-scroll-hidden { transform: translateY(calc(-100% - 3px)); }
+.mohfam-scroll-header:focus-within { transform: none; transition: none; }
 .mohfam-back-to-top { position: fixed; right: 24px; bottom: 24px; z-index: 80; display: inline-flex; min-width: 48px; min-height: 48px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #b6a278; border-radius: 8px; background: var(--mohfam-charcoal); color: white; padding: 12px 16px; font: 600 12px Inter, Arial, sans-serif; box-shadow: 0 4px 16px #0002; cursor: pointer; }
 .mohfam-back-to-top svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .mohfam-back-to-top:hover { border-color: var(--mohfam-gold); background: var(--mohfam-gold-dark); }
@@ -260,6 +263,7 @@ img { max-width: 100%; }
 	.mohfam-back-to-top span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
+	.mohfam-scroll-header { transition: none !important; }
 	.mohfam-finder.is-enhanced .mohfam-finder__panel:not([hidden]) { animation: none; }
 	.has-motion [data-reveal]:not(.is-visible) { opacity: 1; transform: none; }
 }

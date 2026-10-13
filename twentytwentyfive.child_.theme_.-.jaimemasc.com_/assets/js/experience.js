@@ -16,11 +16,39 @@
 	});
 	const progress = document.querySelector('.mohfam-reading-progress span');
 	const topButton = document.querySelector('.mohfam-back-to-top');
+	const header = document.querySelector('.mohfam-header');
+	const stickyHeader = header?.closest('header');
+	let previousScroll = Math.max(0, window.scrollY);
+	let directionTravel = 0;
+	if (stickyHeader) {
+		stickyHeader.classList.add('mohfam-scroll-header');
+		stickyHeader.addEventListener('focusin', () => {
+			stickyHeader.classList.remove('is-scroll-hidden');
+			previousScroll = Math.max(0, window.scrollY);
+			directionTravel = 0;
+		});
+	}
 	let scheduled = false;
 	const updateScroll = () => {
 		const distance = document.documentElement.scrollHeight - window.innerHeight;
 		if (progress) progress.style.transform = `scaleX(${distance > 0 ? Math.max(0, Math.min(1, window.scrollY / distance)) : 0})`;
 		if (topButton) topButton.hidden = window.scrollY < 640;
+		const currentScroll = Math.max(0, window.scrollY);
+		if (stickyHeader) {
+			const delta = currentScroll - previousScroll;
+			const menuOpen = header.classList.contains('is-menu-open') || !!header.querySelector('.mohfam-nav__dropdown.is-open');
+			if (currentScroll <= 24 || menuOpen || stickyHeader.contains(document.activeElement)) {
+				stickyHeader.classList.remove('is-scroll-hidden');
+				directionTravel = 0;
+			} else if (delta !== 0) {
+				directionTravel = Math.sign(delta) === Math.sign(directionTravel) ? directionTravel + delta : delta;
+				if (Math.abs(directionTravel) >= 8) {
+					stickyHeader.classList.toggle('is-scroll-hidden', directionTravel > 0);
+					directionTravel = 0;
+				}
+			}
+		}
+		previousScroll = currentScroll;
 		scheduled = false;
 	};
 	const scheduleScroll = () => {

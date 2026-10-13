@@ -46,6 +46,7 @@ Retain Inter for body copy, Playfair Display for editorial headings, and the app
 - Added a three-step process section and expandable FAQs to the homepage and Services page. Questions address current services, multiple-service inquiries, future divisions, quote preparation, and the shared app.
 - Added subtle service-card hover effects, scroll reveals, page progress, and a return-to-top control across the site. Motion respects reduced-motion preferences, and focused content becomes visible immediately.
 - Reviewed 33 page/viewport combinations at 1440px, 390px, and 320px: no overflow, main/H1 errors, or automated WCAG A/AA findings. Tested every selector state additionally at 768px, as well as desktop chevron alignment, hover/click/Escape/focus behavior, FAQ keyboard control, scroll controls, no-JavaScript fallback, and live reduced-motion preference changes.
+- Added a navbar that slides out on downward scrolling and returns on upward scrolling. Verified the top-of-page state, repeated direction changes, small-scroll stability, open-menu visibility, keyboard focus, and normal/reduced motion at 1440px, 390px, and 320px. The non-JavaScript fallback retains the original visible sticky header.
 
 ## Remaining design priorities
 

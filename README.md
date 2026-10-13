@@ -10,6 +10,8 @@ Shared navigation is in `parts/header.html` with progressive enhancement in `ass
 
 The homepage service selector is in `parts/service-finder.html`; `parts/service-process.html` and `parts/service-faq.html` are shared with the Services page. `assets/js/experience.js` enhances the selector and adds page progress, return-to-top, and scroll effects. Native FAQ controls and the navigation fallback remain usable without JavaScript, and motion respects the visitor's reduced-motion setting.
 
+The sticky navbar slides away on downward scrolling and returns on upward scrolling. It remains visible at the top, while a menu is open, and while navigation has keyboard focus. Small scroll changes are ignored to prevent flicker.
+
 See [the design audit](docs/design-audit.md) for resolved findings, rendered verification, and remaining design priorities.
 
 ## Automatic theme deployment
