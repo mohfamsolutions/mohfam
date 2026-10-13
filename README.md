@@ -8,6 +8,8 @@ The current service order is Security, Commercial Cleaning, Pool Cleaning, Lands
 
 Shared navigation is in `parts/header.html` with progressive enhancement in `assets/js/navigation.js`. The homepage's shared app panel is in `parts/app.html`; its existing app artwork is stored locally under `assets/images`. Shared design refinements are in `assets/css/experience.css`, loaded after the base stylesheet. Both styles and scripts use file timestamps for cache invalidation.
 
+The homepage service selector is in `parts/service-finder.html`; `parts/service-process.html` and `parts/service-faq.html` are shared with the Services page. `assets/js/experience.js` enhances the selector and adds page progress, return-to-top, and scroll effects. Native FAQ controls and the navigation fallback remain usable without JavaScript, and motion respects the visitor's reduced-motion setting.
+
 See [the design audit](docs/design-audit.md) for resolved findings, rendered verification, and remaining design priorities.
 
 ## Automatic theme deployment

@@ -17,7 +17,18 @@
 	menu.hidden = false;
 	submenuButton.hidden = false;
 	header.classList.add('has-navigation');
+	let hoverTimer;
+	let openedByHover = false;
+	const openSubmenu = (fromHover = false) => {
+		window.clearTimeout(hoverTimer);
+		if (!fromHover || submenuButton.getAttribute('aria-expanded') !== 'true') openedByHover = fromHover;
+		submenuButton.setAttribute('aria-expanded', 'true');
+		submenuButton.setAttribute('aria-label', 'Hide service links');
+		dropdown.classList.add('is-open');
+	};
 	const closeSubmenu = () => {
+		window.clearTimeout(hoverTimer);
+		openedByHover = false;
 		submenuButton.setAttribute('aria-expanded', 'false');
 		submenuButton.setAttribute('aria-label', 'Show service links');
 		dropdown.classList.remove('is-open');
@@ -35,10 +46,20 @@
 		if (!open) closeSubmenu();
 	});
 	submenuButton.addEventListener('click', () => {
-		const open = submenuButton.getAttribute('aria-expanded') !== 'true';
-		submenuButton.setAttribute('aria-expanded', String(open));
-		submenuButton.setAttribute('aria-label', open ? 'Hide service links' : 'Show service links');
-		dropdown.classList.toggle('is-open', open);
+		const open = submenuButton.getAttribute('aria-expanded') !== 'true' || openedByHover;
+		if (open) openSubmenu();
+		else closeSubmenu();
+	});
+	dropdown.addEventListener('pointerenter', (event) => {
+		if (!mobile.matches && event.pointerType === 'mouse') openSubmenu(true);
+	});
+	dropdown.addEventListener('pointerleave', (event) => {
+		if (!mobile.matches && event.pointerType === 'mouse' && !dropdown.contains(document.activeElement)) {
+			hoverTimer = window.setTimeout(closeSubmenu, 140);
+		}
+	});
+	dropdown.addEventListener('focusout', (event) => {
+		if (!dropdown.contains(event.relatedTarget)) closeSubmenu();
 	});
 	header.addEventListener('keydown', (event) => {
 		if (event.key !== 'Escape') return;

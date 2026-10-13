@@ -26,7 +26,7 @@ Review scope: the homepage, services, service detail pages, About, Contact, blog
 
 ## Brand and page journey
 
-Retain Inter for body copy, Playfair Display for editorial headings, and the approved charcoal/gold/ivory palette. Keep a consistent spacing scale and visible focus states. The homepage journey is introduction → service comparison → shared standards → app → security detail → company background → insights → inquiry. Services should distinguish live division websites from future offerings before a visitor submits an inquiry.
+Retain Inter for body copy, Playfair Display for editorial headings, and the approved charcoal/gold/ivory palette. Keep a consistent spacing scale and visible focus states. The homepage journey is introduction → interactive service finder → service comparison → shared standards → app → security detail → company background → process → insights → FAQs → inquiry. Services should distinguish live division websites from future offerings before a visitor submits an inquiry.
 
 ## Verification
 
@@ -38,6 +38,14 @@ Retain Inter for body copy, Playfair Display for editorial headings, and the app
 - JavaScript syntax and theme JSON checks passed locally. The deployment workflow checks PHP syntax before upload and now checks every theme JavaScript file.
 - Visual review included the full homepage and service portfolio at desktop/mobile sizes, plus the app panel. Temporary preview files and screenshots are excluded from Git.
 - Live inquiry submissions and email delivery were not exercised during this design review.
+
+## Interaction and section improvements
+
+- Replaced the misaligned text chevron with a centered SVG. The desktop service dropdown opens on hover or an explicit click; keyboard controls, Escape, focus leaving the dropdown, and mobile disclosure remain supported.
+- Replaced the repeated homepage introduction with a native radio-based service selector. All five choices keep the approved service ordering and clearly distinguish current divisions from planned services. Selected results include the appropriate division link or interest-registration action.
+- Added a three-step process section and expandable FAQs to the homepage and Services page. Questions address current services, multiple-service inquiries, future divisions, quote preparation, and the shared app.
+- Added subtle service-card hover effects, scroll reveals, page progress, and a return-to-top control across the site. Motion respects reduced-motion preferences, and focused content becomes visible immediately.
+- Reviewed 33 page/viewport combinations at 1440px, 390px, and 320px: no overflow, main/H1 errors, or automated WCAG A/AA findings. Tested every selector state additionally at 768px, as well as desktop chevron alignment, hover/click/Escape/focus behavior, FAQ keyboard control, scroll controls, no-JavaScript fallback, and live reduced-motion preference changes.
 
 ## Remaining design priorities
 

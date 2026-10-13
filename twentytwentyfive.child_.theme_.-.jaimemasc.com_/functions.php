@@ -44,6 +44,15 @@ add_action(
 			true
 		);
 
+		$experience_script_path = get_stylesheet_directory() . '/assets/js/experience.js';
+		wp_enqueue_script(
+			'mohfam-experience',
+			get_stylesheet_directory_uri() . '/assets/js/experience.js',
+			array( 'mohfam-navigation' ),
+			file_exists( $experience_script_path ) ? (string) filemtime( $experience_script_path ) : wp_get_theme()->get( 'Version' ),
+			true
+		);
+
 		if ( is_singular( 'post' ) ) {
 			$share_script_path = get_stylesheet_directory() . '/assets/js/blog-share.js';
 			$share_script_version = file_exists( $share_script_path )
