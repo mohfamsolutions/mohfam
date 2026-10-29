@@ -2,7 +2,17 @@
 
 Review scope: the homepage, services, service detail pages, About, Contact, blog archive and article templates, category template, privacy policy, terms, and shared navigation/footer. Review the WordPress theme and public pages together; existing WordPress content and inquiries remain in place.
 
-## Delivery plan
+## Current division cards (2026-10-30)
+
+Security, Commercial Cleaning, and Pool Cleaning are live divisions. Commercial Cleaning now links to `https://mohfamcommercialcleaning.com/`; Pool Cleaning links to `https://mohfampoolcleaning.com/`. Landscaping and Car Wash remain Coming Soon.
+
+Both the homepage and Services page show a photo on every division card. Desktop uses three live cards in the first row and two upcoming cards in the second row. Tablet uses two columns, and phones use one column. Photo height is consistent across cards at each breakpoint.
+
+Pool and landscaping stock images are stored locally, sourced from Unsplash image IDs `photo-1576013551627-0cc20b96c2a7` and `photo-1558904541-efa843a96f01`. Car Wash reuses the existing local `car-wash.jpg`. These are illustrative service images.
+
+Checked the new image contents, all five card image references on both templates, WordPress block parsing, JavaScript and theme JSON syntax, and the diff. Rendered visual verification of this update was unavailable: browser automation returned Access Denied, and public live requests returned a browser-verification screen. Earlier rendered results below describe the original audit.
+
+## Original delivery plan
 
 1. Correct commercial cleaning availability and link to https://mohfamcleaning.com/.
 2. Present services everywhere in this order: Security, Commercial Cleaning, Pool Cleaning, Landscaping, Car Wash. Keep the final three marked Coming Soon.

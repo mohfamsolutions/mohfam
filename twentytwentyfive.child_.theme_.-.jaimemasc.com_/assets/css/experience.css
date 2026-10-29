@@ -78,11 +78,14 @@ img { max-width: 100%; }
 .mohfam-section-heading--split h2 { margin-bottom: 0; }
 .mohfam-section-heading--split > p { max-width: 370px; margin-bottom: 0; font-size: 16px; }
 .mohfam-divisions-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; }
-.mohfam-division-card { grid-column: span 2; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--mohfam-neutral); border-radius: var(--mohfam-radius); background: var(--mohfam-ivory); }
-.mohfam-division-card.is-live { grid-column: span 3; background: white; }
+.mohfam-division-card { grid-column: span 3; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--mohfam-neutral); border-radius: var(--mohfam-radius); background: var(--mohfam-ivory); }
+.mohfam-division-card.is-live { grid-column: span 2; background: white; }
 .mohfam-division-card__photo { height: 210px; background-size: cover; background-position: center; }
 .mohfam-division-card__photo--security { background-image: url("../images/security-officer.jpg"); background-position: center 30%; }
 .mohfam-division-card__photo--cleaning { background-image: url("../images/stock-office-lounge.jpg"); }
+.mohfam-division-card__photo--pool { background-image: url("../images/pool-cleaning.jpg"); }
+.mohfam-division-card__photo--landscaping { background-image: url("../images/landscaping.jpg"); }
+.mohfam-division-card__photo--car-wash { background-image: url("../images/car-wash.jpg"); }
 .mohfam-division-card__body { display: flex; flex: 1; flex-direction: column; padding: clamp(24px, 3vw, 36px); }
 .mohfam-division-card__top { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 24px; }
 .mohfam-service-icon { display: inline-flex; color: var(--mohfam-gold-dark); }
