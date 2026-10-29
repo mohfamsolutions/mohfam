@@ -5,6 +5,31 @@
  * @package MohFam
  */
 
+/**
+ * Send former division landing pages to their dedicated websites.
+ */
+function mohfam_redirect_division_pages() {
+	if ( is_admin() || is_preview() || is_feed() || is_embed() || ! in_array( $_SERVER['REQUEST_METHOD'] ?? '', array( 'GET', 'HEAD' ), true ) ) {
+		return;
+	}
+
+	$request_path = untrailingslashit( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ) );
+	$destinations = array(
+		'/commercial-cleaning'          => 'https://mohfamcommercialcleaning.com/',
+		'/services/commercial-cleaning' => 'https://mohfamcommercialcleaning.com/',
+		'/pool-cleaning'                => 'https://mohfampoolcleaning.com/',
+		'/pool-care'                    => 'https://mohfampoolcleaning.com/',
+		'/services/pool-cleaning'       => 'https://mohfampoolcleaning.com/',
+		'/services/pool-care'           => 'https://mohfampoolcleaning.com/',
+	);
+
+	if ( isset( $destinations[ $request_path ] ) ) {
+		wp_redirect( $destinations[ $request_path ], 301, 'MohFam' );
+		exit;
+	}
+}
+add_action( 'template_redirect', 'mohfam_redirect_division_pages', 1 );
+
 add_action(
 	'wp_enqueue_scripts',
 	static function () {
