@@ -79,7 +79,8 @@ img { max-width: 100%; }
 .mohfam-section-heading--split > p { max-width: 370px; margin-bottom: 0; font-size: 16px; }
 .mohfam-divisions-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px; }
 .mohfam-division-card { grid-column: span 3; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--mohfam-neutral); border-radius: var(--mohfam-radius); background: var(--mohfam-ivory); }
-.mohfam-division-card.is-live { grid-column: span 2; background: white; }
+.mohfam-division-card.is-live { background: white; }
+.mohfam-division-card:last-child { grid-column: 1 / -1; }
 .mohfam-division-card__photo { height: 210px; background-size: cover; background-position: center; }
 .mohfam-division-card__photo--security { background-image: url("../images/security-officer.jpg"); background-position: center 30%; }
 .mohfam-division-card__photo--cleaning { background-image: url("../images/stock-office-lounge.jpg"); }

@@ -21,6 +21,8 @@ function mohfam_redirect_division_pages() {
 		'/pool-care'                    => 'https://mohfampoolcleaning.com/',
 		'/services/pool-cleaning'       => 'https://mohfampoolcleaning.com/',
 		'/services/pool-care'           => 'https://mohfampoolcleaning.com/',
+		'/car-wash'                    => 'https://mohfamcarwash.com/',
+		'/services/car-wash'           => 'https://mohfamcarwash.com/',
 	);
 
 	if ( isset( $destinations[ $request_path ] ) ) {

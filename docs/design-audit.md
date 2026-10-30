@@ -4,9 +4,9 @@ Review scope: the homepage, services, service detail pages, About, Contact, blog
 
 ## Current division cards (2026-10-30)
 
-Security, Commercial Cleaning, and Pool Cleaning are live divisions. Commercial Cleaning now links to `https://mohfamcommercialcleaning.com/`; Pool Cleaning links to `https://mohfampoolcleaning.com/`. Landscaping and Car Wash remain Coming Soon.
+Security, Commercial Cleaning, Pool Cleaning, and Car Wash have published division websites. Commercial Cleaning now links to `https://mohfamcommercialcleaning.com/`; Pool Cleaning links to `https://mohfampoolcleaning.com/`. Car Wash links to `https://mohfamcarwash.com/`; its services and availability require confirmation with the division. Landscaping remains Coming Soon.
 
-Both the homepage and Services page show a photo on every division card. Desktop uses three live cards in the first row and two upcoming cards in the second row. Tablet uses two columns, and phones use one column. Photo height is consistent across cards at each breakpoint.
+Both the homepage and Services page show a photo on every division card. Desktop and tablet use two columns with the final Car Wash card spanning the row, preserving the service order without gaps. Phones use one column. Photo height is consistent across cards at each breakpoint.
 
 Pool and landscaping stock images are stored locally, sourced from Unsplash image IDs `photo-1576013551627-0cc20b96c2a7` and `photo-1558904541-efa843a96f01`. Car Wash reuses the existing local `car-wash.jpg`. These are illustrative service images.
 
@@ -64,4 +64,4 @@ Retain Inter for body copy, Playfair Display for editorial headings, and the app
 2. **Use original MohFam photography.** Existing office/lobby images are stock illustrations. Replace them with approved team and property photography as available; avoid presenting stock scenes as client evidence.
 3. **Confirm corporate proof points.** Existing About and security content includes licensing, bonding, insurance, and operating-hours statements. Have the business owner keep those claims aligned with the specific division and current documentation.
 4. **Refresh app previews as services launch.** The real screenshot currently shows the security category. Update it when other divisions appear in the app; the new copy does not claim upcoming services are already bookable.
-5. **Keep future-service states consistent.** When Pool Cleaning, Landscaping, or Car Wash launches, update cards, navigation, footer, inquiry options, detail pages, and app copy together.
+5. **Keep future-service states consistent.** When Landscaping launches, update cards, navigation, footer, inquiry options, detail pages, and app copy together.
