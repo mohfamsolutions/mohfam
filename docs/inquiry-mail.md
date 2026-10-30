@@ -35,4 +35,18 @@ The current sender is `MohFam Website <website@mohfam.co>`; recipient is `MohFam
 2. Deploy through the existing workflow only after checks pass. Production PHP cURL/HTTPS and configuration readability cannot be inferred from local tests or a deployment upload.
 3. Phase 3 requires the owner's separate permission before exactly one controlled email. Confirm Gmail inbox placement, the subject, visitor Reply-To, and the original message's `Authentication-Results` showing `dkim=pass` for `header.d=mohfam.co`. Brevo acceptance and Gmail delivery are distinct checks. Only then describe the form as confirmed live.
 
-Phase 2 acceptance: no fake success or mail fallback; friendly errors include +1 (818) 818-1181 and retain typed fields; all protections above exercised by negative tests. Phase 3 delivery verification remains pending until the owner authorizes the controlled test.
+Phase 2 acceptance: no fake success or mail fallback; friendly errors include +1 (818) 818-1181 and retain typed fields; all protections above exercised by negative tests.
+
+## Controlled delivery verification — 2026-10-30
+
+The owner authorized and submitted one controlled contact-form test. Gmail received it at 04:22:51 UTC (12:22:51 Asia/Taipei), and both the owner's screenshot and Gmail message labels confirmed Inbox placement. No additional test was sent.
+
+- Sender: `MohFam Website <website@mohfam.co>`.
+- Recipient: `MohFam <mohfamsolutions@gmail.com>`.
+- Subject: `[MohFam] General Inquiry inquiry — Website Test`, matching the specified subject format.
+- Reply-To: `Website Test <mohfamsolutions@gmail.com>`, matching the submitted visitor information.
+- Gmail `Authentication-Results`: `dkim=pass`, identity `@mohfam.co`, selector `brevo2`; the corresponding DKIM signature has `d=mohfam.co`. SPF and DMARC also passed.
+- Brevo message ID: `<202610300422.16942536791@smtp-relay.mailin.fr>`.
+- Inquiry reference: `24b14c2fa153a54ea5f68233`.
+
+The form is confirmed live through the controlled Gmail delivery check. This verifies this message's delivery and authentication; ongoing inbox placement may vary.
