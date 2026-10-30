@@ -288,7 +288,17 @@ namespace {
 		check( str_contains( $confirmation['textContent'], 'within 1 business day' ) && str_contains( $confirmation['textContent'], '+1 (818) 818-1181' ) && str_contains( $confirmation['textContent'], 'MohFam | Los Angeles, CA | mohfam.co' ), 'Requested short acknowledgement copy' );
 		$escaped = \MohFam\Mail\confirmationPayload( array_replace( $fields, array( 'name' => '<b>Michael</b> Example' ) ), $reference );
 		check( ! str_contains( $escaped['htmlContent'], '<b>Michael</b>' ) && str_contains( $escaped['htmlContent'], '&lt;b&gt;Michael&lt;/b&gt;' ), 'First name is HTML escaped' );
-		check( 1 === preg_match_all( '/<img\b/', $confirmation['htmlContent'] ) && str_contains( $confirmation['htmlContent'], '/assets/images/mohfam-logo.png' ) && str_contains( $confirmation['htmlContent'], '#c5a059' ) && str_contains( $confirmation['htmlContent'], 'max-width:600px' ), 'Site logo, colors, responsive email layout; no extra pixel' );
+		check( 1 === preg_match_all( '/<img\b/', $confirmation['htmlContent'] ) && str_contains( $confirmation['htmlContent'], '/assets/images/email-logo.png' ) && str_contains( $confirmation['htmlContent'], '#c5a059' ) && str_contains( $confirmation['htmlContent'], 'max-width:600px' ), 'Site logo, colors, responsive email layout; no extra pixel' );
+		preg_match( '/<img\b[^>]*>/', $confirmation['htmlContent'], $logoTag );
+		preg_match( '/\bsrc="([^"]+)"/', $logoTag[0], $logoSrc );
+		$logoUrl = $logoSrc[1];
+		check( 'https' === parse_url( $logoUrl, PHP_URL_SCHEME ) && 'mohfam.co' === parse_url( $logoUrl, PHP_URL_HOST ) && str_ends_with( $logoUrl, '.png' ), 'Email logo URL is absolute HTTPS on mohfam.co and ends in .png' );
+		check( str_contains( $logoTag[0], 'width="180"' ) && str_contains( $logoTag[0], 'height="56"' ) && str_contains( $logoTag[0], 'alt="MohFam"' ) && str_contains( $logoTag[0], 'style="display:block;border:0;"' ), 'Explicit compact dimensions, blocked-image alt text, and email-safe logo style' );
+		$logoSize = getimagesize( __DIR__ . '/../twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/images/email-logo.png' );
+		check( 360 === $logoSize[0] && 112 === $logoSize[1] && IMAGETYPE_PNG === $logoSize[2], 'Logo asset is an actual 2x PNG' );
+		preg_match_all( '/<(?:table|tr|td|div)\b[^>]*>/', $confirmation['htmlContent'], $containers );
+		check( ! preg_match( '/\bheight\s*(?:=|:)/', implode( '', $containers[0] ) ) && ! str_contains( $logoTag[0], 'height:80px' ) && ! str_contains( $logoTag[0], 'margin:0 0 24px' ), 'No fixed-height header/spacer or oversized old image gap' );
+		check( ! str_contains( $summer['htmlContent'], '<img' ), 'Notification uses no shared image header and remains unchanged' );
 		check( ! str_contains( $confirmation['htmlContent'], '<script' ) && ! str_contains( $confirmation['htmlContent'], 'fonts.googleapis.com' ), 'No scripts, remote fonts, or new tracking code' );
 		check( ! \MohFam\Mail\acceptedNotification( array( 'success' => true, 'http_code' => 200, 'messageId' => '<id@example>' ) ), 'Only notification 201 qualifies' );
 		check( ! \MohFam\Mail\acceptedNotification( array( 'success' => true, 'http_code' => 201, 'messageId' => '' ) ), 'Notification messageId is mandatory' );

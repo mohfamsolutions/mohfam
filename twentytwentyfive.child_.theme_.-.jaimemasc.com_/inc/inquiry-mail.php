@@ -423,13 +423,13 @@ function confirmationPayload( array $fields, string $reference ): array {
 		. "Need help sooner? Call +1 (818) 818-1181.\n\n"
 		. "— The MohFam Team\nMohFam | Los Angeles, CA | mohfam.co";
 	$escape = static function ( $value ) { return htmlspecialchars( $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ); };
-	$logo = 'https://mohfam.co/wp-content/themes/twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/images/mohfam-logo.png';
+	$logo = 'https://mohfam.co/wp-content/themes/twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/images/email-logo.png';
 	$html = '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
 		. '<body style="margin:0;padding:0;background:#f9f9f7;color:#1a1a1b;font-family:Arial,sans-serif;-webkit-text-size-adjust:100%">'
 		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f7"><tr><td align="center" style="padding:24px 12px">'
 		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-top:4px solid #c5a059"><tr><td style="padding:24px">'
-		. '<img src="' . $logo . '" alt="MohFam" width="80" height="80" style="display:block;width:80px;height:80px;border:0;margin:0 0 24px">'
-		. '<p style="margin:0 0 16px;font-size:18px;line-height:1.5">Hi ' . $escape( $firstName ) . ',</p>'
+		. '<img src="' . $logo . '" alt="MohFam" width="180" height="56" style="display:block;border:0;">'
+		. '<p style="margin:12px 0 16px;font-size:18px;line-height:1.5">Hi ' . $escape( $firstName ) . ',</p>'
 		. '<p style="margin:0 0 20px;font-size:16px;line-height:1.6">Thanks for contacting MohFam. We received your ' . $escape( $safe['service'] ) . ' request and will get back to you within 1 business day.</p>'
 		. '<p style="margin:0 0 20px;padding:12px;background:#f9f9f7;font-size:14px;line-height:1.6;overflow-wrap:anywhere">Reference: <strong>' . $escape( $reference ) . '</strong></p>'
 		. '<p style="margin:0 0 20px;font-size:16px;line-height:1.6">Need help sooner? Call <a href="tel:+18188181181" style="color:#775a19">+1 (818) 818-1181</a>.</p>'
