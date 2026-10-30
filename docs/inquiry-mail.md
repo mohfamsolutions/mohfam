@@ -77,6 +77,13 @@ The owner authorized and submitted one controlled contact-form test. Gmail recei
 The form is confirmed live through the controlled Gmail delivery check. This verifies this message's delivery and authentication; ongoing inbox placement may vary.
 
 
-## Pending two-step contact verification
+## Completed two-step contact verification - 2026-10-30
 
-The owner requires a fresh permission question before each of two tests using `mohfamsolutions@gmail.com`. First inspect existing contact state: an already-true consent or existing Newsletter membership must not be reset to manufacture an unchecked result. Test 1 uses Website Test / General Inquiry with an unchecked box: expect inquiry list 3, false consent for a new/unsubscribed contact, and correct name, source, service, and Los Angeles date. After verification, separately ask permission for Test 2 with the same email and a checked box: expect lists 3 and 4, true consent, and the same contact ID with no duplicate. Neither contact test has been sent yet.
+The owner authorized each test separately and submitted each once using Website Test / mohfamsolutions@gmail.com / General Inquiry. The owner verified the following contact state directly in Brevo; no reset or deletion was performed to manufacture test results.
+
+- Starting state: existing contact #1, list #2 only, all inquiry attributes and MARKETING_OPT_IN empty; email campaign and transactional subscription states enabled.
+- Test 1, unchecked: same contact #1, lists #2 and #3, no #4. FIRSTNAME=Website, LASTNAME=Test, SERVICE_INTEREST=General Inquiry, SOURCE_SITE=mohfam.co, LAST_INQUIRY_AT=2026-10-29 (Los Angeles date). MARKETING_OPT_IN stayed empty because the code omits false on existing-contact updates. The owner observed sync within one minute. The notification reached Gmail Spam.
+- Test 2, checked, reference `d6b872d1d380837184e64615`: same contact #1 with no duplicate, lists #2, #3, and #4, MARKETING_OPT_IN=Yes (true). All other inquiry attributes remained correct, including the Los Angeles date 2026-10-29.
+- Test 2 notification independently located through connected Gmail: received 2026-10-30 05:07:53 UTC / 13:07:53 Asia/Taipei, labeled SPAM. Subject `[MohFam] General Inquiry inquiry — Website Test`, sender `MohFam Website <website@mohfam.co>`, Reply-To `Website Test <mohfamsolutions@gmail.com>`. Gmail Authentication-Results confirms DKIM pass for mohfam.co (brevo2), SPF pass, and DMARC pass. Message ID: `<202610300507.35432596088@smtp-relay.mailin.fr>`.
+
+Production readiness reported `litespeed_finish_request` for the after-response worker. Both contact-sync paths and notification delivery are confirmed, with spam placement on these contact tests. Inbox placement is not guaranteed by successful authentication. The owner is managing the Gmail sender filter; no sending-code, DNS, Brevo-setting, or mailbox-filter changes were made for this result. No additional test email was sent.
