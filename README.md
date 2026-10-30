@@ -18,7 +18,7 @@ See [the design audit](docs/design-audit.md) for resolved findings, rendered ver
 
 ## Inquiry email
 
-The existing contact and homepage forms use a reusable plain-PHP cURL sender for Brevo. After an accepted notification, WordPress Cron syncs the visitor to Inquiries list #3 and adds Newsletter list #4 only with the optional checkbox's consent; existing consent is preserved. Configuration lives outside `public_html` in the account's `private/mohfam-mail.php`; it is never deployed or committed. See [inquiry mail setup, safeguards, and the delivery test gate](docs/inquiry-mail.md). Automated checks mock the transport and never send email or create contacts. Each live integration test requires the owner's separate authorization.
+The existing contact and homepage forms use a reusable plain-PHP cURL sender for Brevo. After an accepted notification, a PHP shutdown worker finishes the JSON response and immediately syncs the visitor to Inquiries list #3 and adds Newsletter list #4 only with the optional checkbox's consent; existing consent is preserved. New inquiries do not depend on WP-Cron or site traffic. Configuration lives outside `public_html` in the account's `private/mohfam-mail.php`; it is never deployed or committed. See [inquiry mail setup, safeguards, and the delivery test gate](docs/inquiry-mail.md). Automated checks mock the transport and never send email or create contacts. Each live integration test requires the owner's separate authorization.
 
 ## Automatic theme deployment
 

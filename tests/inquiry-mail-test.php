@@ -1,8 +1,13 @@
 <?php
 /** All transport calls are replaced below. No real API key or network is used. */
 namespace MohFam\Mail {
+	function register_shutdown_function( $callback, ...$args ) {
+		if ( ! empty( $GLOBALS['defer_fail'] ) ) { throw new \RuntimeException( 'Mocked registration failure' ); }
+		$GLOBALS['deferred_contacts'][] = array( 'callback' => $callback, 'args' => $args );
+	}
+	function fastcgi_finish_request() { $GLOBALS['response_finished'] = true; $GLOBALS['response_order'][] = 'finished'; return $GLOBALS['finish_success'] ?? true; }
 	function curl_version() { return array( 'protocols' => array( 'https' ) ); }
-	function curl_init( $url ) { $GLOBALS['transport_calls']++; $GLOBALS['transport_url'] = $url; return (object) array( 'url' => $url ); }
+	function curl_init( $url ) { $GLOBALS['transport_calls']++; $GLOBALS['transport_url'] = $url; if ( str_contains( $url, '/contacts' ) ) { $GLOBALS['response_order'][] = 'contact'; } return (object) array( 'url' => $url ); }
 	function curl_setopt_array( $curl, $options ) { $GLOBALS['transport_options'] = $options; $curl->options = $options; return true; }
 	function curl_exec( $curl ) {
 		if ( str_contains( $curl->url, '/v3/contacts' ) ) {
@@ -20,6 +25,10 @@ namespace MohFam\Mail {
 }
 
 namespace {
+	if ( ! function_exists( 'fastcgi_finish_request' ) ) {
+		function fastcgi_finish_request() { throw new \RuntimeException( 'Real response finisher forbidden in unit tests' ); }
+	}
+	function wp_json_encode( $data ) { return json_encode( $data ); }
 	// Minimal cURL symbols permit offline tests even when CLI has no extension.
 	if ( ! function_exists( 'curl_init' ) ) {
 		function curl_init( $url ) { throw new \RuntimeException( 'Real transport forbidden in tests' ); }
@@ -41,11 +50,7 @@ namespace {
 	}
 	class WP_Error {}
 	function add_action( ...$args ) {}
-	function wp_schedule_single_event( $time, $hook, $args, $wp_error ) {
-		if ( ! empty( $GLOBALS['queue_fail'] ) ) { return new WP_Error(); }
-		$GLOBALS['scheduled_contacts'][] = array( 'hook' => $hook, 'args' => $args );
-		return true;
-	}
+	function wp_schedule_single_event( ...$args ) { throw new \RuntimeException( 'WP-Cron must not be used for new inquiries' ); }
 	function home_url( $path ) { return 'https://mohfam.co' . $path; }
 	function wp_parse_url( $value ) { return parse_url( $value ); }
 	function wp_unslash( $value ) { return stripslashes( $value ); }
@@ -168,15 +173,15 @@ namespace {
 		check( $GLOBALS['transport_calls'] === $before, 'All invalid requests avoided transport' );
 		clearRate(); $result = request();
 		check( $result->success && $GLOBALS['transport_calls'] === $before + 1, 'Valid complete handler submits once' );
-		$queued = end( $GLOBALS['scheduled_contacts'] );
-		check( 'mohfam_sync_inquiry_contact' === $queued['hook'] && false === $queued['args'][1]['marketing_opt_in'], 'Successful email queues unchecked contact sync' );
-		check( ! isset( $queued['args'][1]['message'] ) && ! isset( $queued['args'][1]['phone'] ), 'Queue excludes inquiry message and unnecessary fields' );
-		check( ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'America/Los_Angeles' ) ) )->format( 'Y-m-d' ) === $queued['args'][3], 'Queue captures Los Angeles inquiry date' );
+		$queued = end( $GLOBALS['deferred_contacts'] );
+		check( 'MohFam\\Mail\\runContactAfterResponse' === $queued['callback'] && false === $queued['args'][1]['marketing_opt_in'], 'Successful email registers unchecked after-response sync' );
+		check( ! isset( $queued['args'][1]['message'] ) && ! isset( $queued['args'][1]['phone'] ), 'Deferred job excludes inquiry message and unnecessary fields' );
+		check( ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'America/Los_Angeles' ) ) )->format( 'Y-m-d' ) === $queued['args'][4], 'Deferred job captures Los Angeles inquiry date' );
 		check( 429 === request()->status, 'Handler rate limit stops duplicate transport' );
 		clearRate(); $GLOBALS['transport_status'] = 503;
-		$queuedCount = count( $GLOBALS['scheduled_contacts'] );
+		$queuedCount = count( $GLOBALS['deferred_contacts'] );
 		$result = request(); check( ! $result->success && 503 === $result->status, 'Provider failure never reports success' );
-		check( $queuedCount === count( $GLOBALS['scheduled_contacts'] ), 'Failed notification never queues contact sync' );
+		check( $queuedCount === count( $GLOBALS['deferred_contacts'] ), 'Failed notification never registers contact sync' );
 		$_SERVER = array( 'REQUEST_METHOD' => 'POST', 'HTTP_ORIGIN' => 'https://mohfam.co', 'REMOTE_ADDR' => '192.0.2.1' );
 		$beforeSession = $GLOBALS['transport_calls'];
 		try { mohfam_inquiry_session(); } catch ( JsonResponse $session ) {
@@ -237,17 +242,24 @@ namespace {
 		check( ! $sync( $contact, array( array( 404, array() ), array( 503, array( 'message' => 'private rejected contact body' ) ) ) ), 'Contact upsert failure is caught' );
 		check( ! $sync( $contact, array( array( 0, false ) ) ), 'Contact transport timeout is caught' );
 		$GLOBALS['transport_status'] = 201; $GLOBALS['transport_body'] = '{"messageId":"<test-123@brevo.example>"}';
-		clearRate(); $GLOBALS['queue_fail'] = true;
-		check( request()->success, 'Queue failure never changes accepted email success' );
-		$GLOBALS['queue_fail'] = false;
+		clearRate(); $GLOBALS['defer_fail'] = true;
+		check( request()->success, 'Registration failure never changes accepted email success' );
+		$GLOBALS['defer_fail'] = false;
 		clearRate(); $visitor = request( array( 'marketing_opt_in' => '1' ) );
-		$job = end( $GLOBALS['scheduled_contacts'] );
+		$job = end( $GLOBALS['deferred_contacts'] );
 		check( $visitor->success && true === $job['args'][1]['marketing_opt_in'], 'Checked consent carried to deferred worker' );
 		$GLOBALS['contact_responses'] = array( array( 404, array() ), array( 503, array( 'message' => 'private rejected contact body' ) ) );
-		mohfam_sync_inquiry_contact( ...$job['args'] );
+		$GLOBALS['response_order'] = array();
+		call_user_func_array( $job['callback'], $job['args'] );
 		check( $visitor->success && 200 === $visitor->status, 'Contact API failure cannot change completed visitor success' );
+		check( array( 'finished', 'contact', 'contact' ) === $GLOBALS['response_order'], 'Response is finished before any contact request starts' );
+		$beforeFailedFinish = $GLOBALS['transport_calls'];
+		$GLOBALS['finish_success'] = false;
+		call_user_func_array( $job['callback'], $job['args'] );
+		check( $beforeFailedFinish === $GLOBALS['transport_calls'] && $visitor->success, 'Failed response finish cannot block visitor with contact API work' );
+		$GLOBALS['finish_success'] = true;
 		$contactLog = file_get_contents( $fixture . '/private/mohfam-mail.log' );
-		check( str_contains( $contactLog, 'contact_upsert_failed' ) && str_contains( $contactLog, 'contact_queue_failed' ), 'Contact failure categories privately logged' );
+		check( str_contains( $contactLog, 'contact_upsert_failed' ) && str_contains( $contactLog, 'contact_defer_failed' ), 'Contact failure categories privately logged' );
 		check( ! str_contains( $contactLog, 'private rejected contact body' ) && ! str_contains( $contactLog, 'test-only-not-a-real-api-key' ) && ! str_contains( $contactLog, 'visitor@example.com' ), 'Contact logs contain no provider bodies, keys, or email addresses' );
 		echo 'Passed ' . $GLOBALS['checks'] . " offline inquiry checks; no network or email used.\n";
 	} finally { removeFixture( $fixture ); }

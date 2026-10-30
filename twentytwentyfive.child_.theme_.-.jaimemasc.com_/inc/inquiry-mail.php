@@ -186,7 +186,81 @@ function logContactEvent( string $siteRoot, string $reference, string $status, i
 	}
 }
 
-/** Run only in a queued worker, after notification acceptance. No mail is sent. */
+/** Select the native response-finishing API when the hosting SAPI provides one. */
+function responseFinishMode(): string {
+	if ( function_exists( 'fastcgi_finish_request' ) ) {
+		return 'fastcgi_finish_request';
+	}
+	if ( function_exists( 'litespeed_finish_request' ) ) {
+		return 'litespeed_finish_request';
+	}
+	return 'content_length_flush';
+}
+
+/** Called before JSON output. Explicit framing supports the shared-host fallback. */
+function prepareContactResponse( int $length ): void {
+	ignore_user_abort( true );
+	if ( 'content_length_flush' !== responseFinishMode() ) {
+		return;
+	}
+	@ini_set( 'zlib.output_compression', '0' );
+	while ( ob_get_level() > 0 ) {
+		if ( ! @ob_end_clean() ) {
+			break;
+		}
+	}
+	if ( ! headers_sent() ) {
+		header( 'Connection: close' );
+		header( 'Content-Length: ' . $length );
+	}
+}
+
+/** No output is permitted after this function; provider errors stay private. */
+function finishContactResponse(): bool {
+	$mode = responseFinishMode();
+	if ( 'fastcgi_finish_request' === $mode ) {
+		return fastcgi_finish_request();
+	}
+	if ( 'litespeed_finish_request' === $mode ) {
+		return false !== litespeed_finish_request();
+	}
+	while ( ob_get_level() > 0 ) {
+		if ( ! @ob_end_flush() ) {
+			break;
+		}
+	}
+	flush();
+	return true;
+}
+
+/** Register in memory only; never schedules a WP-Cron event or loopback. */
+function deferContactSync( string $site, array $fields, string $siteRoot, string $reference ): void {
+	try {
+		$contact = array_intersect_key( $fields, array_flip( array( 'name', 'email', 'service', 'marketing_opt_in' ) ) );
+		$date = ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'America/Los_Angeles' ) ) )->format( 'Y-m-d' );
+		register_shutdown_function( __NAMESPACE__ . '\\runContactAfterResponse', $site, $contact, $siteRoot, $reference, $date );
+		logContactEvent( $siteRoot, $reference, 'contact_deferred' );
+	} catch ( \Throwable $error ) {
+		logContactEvent( $siteRoot, $reference, 'contact_defer_failed' );
+	}
+}
+
+function runContactAfterResponse( string $site, array $fields, string $siteRoot, string $reference, string $date ): void {
+	try {
+		ignore_user_abort( true );
+		@set_time_limit( 35 );
+		if ( ! finishContactResponse() ) {
+			logContactEvent( $siteRoot, $reference, 'contact_response_finish_failed' );
+			return;
+		}
+		logContactEvent( $siteRoot, $reference, 'contact_after_response_started' );
+		syncInquiryContact( $site, $fields, $siteRoot, $reference, $date );
+	} catch ( \Throwable $error ) {
+		logContactEvent( $siteRoot, $reference, 'contact_after_response_failed' );
+	}
+}
+
+/** Runs after response completion (or for a previously scheduled legacy event). */
 function syncInquiryContact( string $site, array $fields, string $siteRoot, string $reference, string $inquiryDate ): bool {
 	$lock = false;
 	try {
@@ -201,8 +275,16 @@ function syncInquiryContact( string $site, array $fields, string $siteRoot, stri
 		}
 		$lock = @fopen( $lockPath, 'c' );
 		// Shared by these site integrations: serialize lookup/upsert consent decisions.
-		if ( false === $lock || ! @chmod( $lockPath, 0600 ) || ! flock( $lock, LOCK_EX ) ) {
+		if ( false === $lock || ! @chmod( $lockPath, 0600 ) ) {
 			throw new \RuntimeException( 'contact_lock_unavailable' );
+		}
+		$deadline = microtime( true ) + 5;
+		while ( ! flock( $lock, LOCK_EX | LOCK_NB ) ) {
+			if ( microtime( true ) >= $deadline ) {
+				logContactEvent( $siteRoot, $reference, 'contact_lock_timeout' );
+				return false;
+			}
+			usleep( 50000 );
 		}
 		$key = loadApiKey( $private );
 		$lookup = contactRequest( $key, $fields['email'] );

@@ -57,6 +57,7 @@ function mohfam_inquiry_session() {
 	wp_send_json_success( array(
 		'nonce' => wp_create_nonce( 'mohfam_form_submission' ),
 		'form_token' => $payload . '.' . $signature,
+		'contact_response_mode' => \MohFam\Mail\responseFinishMode(),
 	) );
 }
 add_action( 'wp_ajax_mohfam_form_session', 'mohfam_inquiry_session' );
@@ -142,38 +143,13 @@ function mohfam_handle_form_submission() {
 	if ( ! $result['success'] ) {
 		mohfam_inquiry_error( 'We could not send your inquiry. Please try again later.', 503, $result['reference'] );
 	}
-	mohfam_queue_inquiry_contact( $site, $fields, $result['reference'] );
-	wp_send_json_success( array( 'message' => 'Thank you. Your inquiry was sent to the MohFam team. Reference: ' . $result['reference'] . '.' ) );
+	\MohFam\Mail\deferContactSync( $site, $fields, ABSPATH, $result['reference'] );
+	$data = array( 'message' => 'Thank you. Your inquiry was sent to the MohFam team. Reference: ' . $result['reference'] . '.' );
+	\MohFam\Mail\prepareContactResponse( strlen( wp_json_encode( array( 'success' => true, 'data' => $data ) ) ) );
+	wp_send_json_success( $data );
 }
 
-/** Enqueue only minimal contact data. No contact API calls in the form request. */
-function mohfam_queue_inquiry_contact( $site, $fields, $reference ) {
-	try {
-		$contact = array_intersect_key( $fields, array_flip( array( 'name', 'email', 'service', 'marketing_opt_in' ) ) );
-		$date = ( new DateTimeImmutable( 'now', new DateTimeZone( 'America/Los_Angeles' ) ) )->format( 'Y-m-d' );
-		$scheduled = wp_schedule_single_event( time(), 'mohfam_sync_inquiry_contact', array( $site, $contact, $reference, $date ), true );
-		if ( is_wp_error( $scheduled ) || true !== $scheduled ) {
-			\MohFam\Mail\logContactEvent( ABSPATH, $reference, 'contact_queue_failed' );
-			return;
-		}
-		\MohFam\Mail\logContactEvent( ABSPATH, $reference, 'contact_queued' );
-		// WordPress makes a nonblocking loopback cron request; no Brevo work here.
-		add_action( 'shutdown', 'mohfam_spawn_contact_cron' );
-	} catch ( Throwable $error ) {
-		\MohFam\Mail\logContactEvent( ABSPATH, $reference, 'contact_queue_failed' );
-	}
-}
-
-function mohfam_spawn_contact_cron() {
-	try {
-		if ( ! ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) && ! ( defined( 'ALTERNATE_WP_CRON' ) && ALTERNATE_WP_CRON ) ) {
-			spawn_cron();
-		}
-	} catch ( Throwable $error ) {
-		// The queued event remains for the next normal cron run.
-	}
-}
-
+/** Compatibility only: drain any events scheduled by the previous deployment. */
 function mohfam_sync_inquiry_contact( $site, $fields, $reference, $date ) {
 	\MohFam\Mail\syncInquiryContact( $site, $fields, ABSPATH, $reference, $date );
 }
