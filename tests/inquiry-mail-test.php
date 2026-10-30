@@ -17,6 +17,15 @@ namespace MohFam\Mail {
 			$GLOBALS['contact_requests'][] = array( 'url' => $curl->url, 'options' => $curl->options );
 			return is_array( $next[1] ) ? json_encode( $next[1] ) : $next[1];
 		}
+		$payload = json_decode( $curl->options[ CURLOPT_POSTFIELDS ], true );
+		if ( in_array( 'inquiry-confirmation', $payload['tags'] ?? array(), true ) ) {
+			$GLOBALS['confirmation_requests'][] = $payload;
+			$GLOBALS['response_order'][] = 'confirmation';
+			$curl->status = $GLOBALS['confirmation_status'] ?? 201;
+			return $GLOBALS['confirmation_body'] ?? '{"messageId":"<confirmation-test@brevo.example>"}';
+		}
+		$GLOBALS['notification_requests'][] = $payload;
+		$GLOBALS['response_order'][] = 'notification';
 		return $GLOBALS['transport_body'];
 	}
 	function curl_getinfo( $curl, $option ) { return $curl->status ?? $GLOBALS['transport_status']; }
@@ -113,6 +122,7 @@ namespace {
 		$summer = \MohFam\Mail\inquiryPayload( 'MohFam', $fields, 'test-ref', new \DateTimeImmutable( '2026-07-01T12:00:00Z' ) );
 		$winter = \MohFam\Mail\inquiryPayload( 'MohFam Car Wash', $fields, 'test-ref', new \DateTimeImmutable( '2026-12-01T12:00:00Z' ) );
 		check( '[MohFam] Car Wash inquiry — Taylor <Example>' === $summer['subject'], 'Exact subject format' );
+		check( array( 'inquiry-notification' ) === $summer['tags'], 'Notification gets its Brevo log tag' );
 		check( $fields['email'] === $summer['replyTo']['email'], 'Visitor Reply-To' );
 		check( 'website@mohfam.co' === $summer['sender']['email'] && 'mohfamsolutions@gmail.com' === $summer['to'][0]['email'], 'Fixed sender and recipient' );
 		check( ! str_contains( $summer['htmlContent'], '<script>' ) && str_contains( $summer['htmlContent'], '&lt;script&gt;' ), 'HTML escaped' );
@@ -151,6 +161,7 @@ namespace {
 		clearRate();
 		$GLOBALS['transport_status'] = 201; $GLOBALS['transport_body'] = '{"messageId":"<test-123@brevo.example>"}';
 		$before = $GLOBALS['transport_calls'];
+		$beforeSpamDeferred = count( $GLOBALS['deferred_contacts'] ?? array() );
 		foreach ( array(
 			array( array( 'nonce' => 'bad' ), array(), 403 ),
 			array( array(), array( 'REQUEST_METHOD' => 'GET' ), 405 ),
@@ -171,6 +182,7 @@ namespace {
 			check( ! $result->success && $result->status === $case[2] && str_contains( $result->data['message'], '+1 (818) 818-1181' ), 'Invalid request rejected with backup phone: ' . $case[2] );
 		}
 		check( $GLOBALS['transport_calls'] === $before, 'All invalid requests avoided transport' );
+		check( count( $GLOBALS['deferred_contacts'] ?? array() ) === $beforeSpamDeferred, 'Spam and validation failures never register confirmations' );
 		clearRate(); $result = request();
 		check( $result->success && $GLOBALS['transport_calls'] === $before + 1, 'Valid complete handler submits once' );
 		$queued = end( $GLOBALS['deferred_contacts'] );
@@ -252,7 +264,7 @@ namespace {
 		$GLOBALS['response_order'] = array();
 		call_user_func_array( $job['callback'], $job['args'] );
 		check( $visitor->success && 200 === $visitor->status, 'Contact API failure cannot change completed visitor success' );
-		check( array( 'finished', 'contact', 'contact' ) === $GLOBALS['response_order'], 'Response is finished before any contact request starts' );
+		check( array( 'finished', 'contact', 'contact', 'confirmation' ) === $GLOBALS['response_order'], 'Response finishes before contact calls and confirmation, even when contact sync fails' );
 		$beforeFailedFinish = $GLOBALS['transport_calls'];
 		$GLOBALS['finish_success'] = false;
 		call_user_func_array( $job['callback'], $job['args'] );
@@ -261,6 +273,60 @@ namespace {
 		$contactLog = file_get_contents( $fixture . '/private/mohfam-mail.log' );
 		check( str_contains( $contactLog, 'contact_upsert_failed' ) && str_contains( $contactLog, 'contact_defer_failed' ), 'Contact failure categories privately logged' );
 		check( ! str_contains( $contactLog, 'private rejected contact body' ) && ! str_contains( $contactLog, 'test-only-not-a-real-api-key' ) && ! str_contains( $contactLog, 'visitor@example.com' ), 'Contact logs contain no provider bodies, keys, or email addresses' );
+
+		// Confirmation body and after-response acceptance gate.
+		$reference = str_repeat( 'a', 24 );
+		$confirmation = \MohFam\Mail\confirmationPayload( $fields, $reference );
+		check( 'MohFam' === $confirmation['sender']['name'] && 'website@mohfam.co' === $confirmation['sender']['email'], 'Confirmation sender is MohFam website sender' );
+		check( $fields['email'] === $confirmation['to'][0]['email'] && $fields['name'] === $confirmation['to'][0]['name'], 'Confirmation addressed only to validated visitor' );
+		check( array( 'email' => 'mohfamsolutions@gmail.com', 'name' => 'MohFam' ) === $confirmation['replyTo'], 'Confirmation replies reach MohFam' );
+		check( 'We received your request — MohFam' === $confirmation['subject'] && array( 'inquiry-confirmation' ) === $confirmation['tags'], 'Exact confirmation subject and tag' );
+		foreach ( array( 'textContent', 'htmlContent' ) as $bodyKey ) {
+			check( str_contains( $confirmation[$bodyKey], 'Hi Taylor,' ) && str_contains( $confirmation[$bodyKey], 'Car Wash request' ) && str_contains( $confirmation[$bodyKey], $reference ), 'Body contains only intended personalized fields' );
+			check( ! str_contains( $confirmation[$bodyKey], $fields['message'] ) && ! str_contains( $confirmation[$bodyKey], $fields['company'] ) && ! str_contains( $confirmation[$bodyKey], '<Example>' ) && ! str_contains( $confirmation[$bodyKey], 'alert(1)' ), 'No project details, company, or last name echoed in body' );
+		}
+		check( str_contains( $confirmation['textContent'], 'within 1 business day' ) && str_contains( $confirmation['textContent'], '+1 (818) 818-1181' ) && str_contains( $confirmation['textContent'], 'MohFam | Los Angeles, CA | mohfam.co' ), 'Requested short acknowledgement copy' );
+		$escaped = \MohFam\Mail\confirmationPayload( array_replace( $fields, array( 'name' => '<b>Michael</b> Example' ) ), $reference );
+		check( ! str_contains( $escaped['htmlContent'], '<b>Michael</b>' ) && str_contains( $escaped['htmlContent'], '&lt;b&gt;Michael&lt;/b&gt;' ), 'First name is HTML escaped' );
+		check( 1 === preg_match_all( '/<img\b/', $confirmation['htmlContent'] ) && str_contains( $confirmation['htmlContent'], '/assets/images/mohfam-logo.png' ) && str_contains( $confirmation['htmlContent'], '#c5a059' ) && str_contains( $confirmation['htmlContent'], 'max-width:600px' ), 'Site logo, colors, responsive email layout; no extra pixel' );
+		check( ! str_contains( $confirmation['htmlContent'], '<script' ) && ! str_contains( $confirmation['htmlContent'], 'fonts.googleapis.com' ), 'No scripts, remote fonts, or new tracking code' );
+		check( ! \MohFam\Mail\acceptedNotification( array( 'success' => true, 'http_code' => 200, 'messageId' => '<id@example>' ) ), 'Only notification 201 qualifies' );
+		check( ! \MohFam\Mail\acceptedNotification( array( 'success' => true, 'http_code' => 201, 'messageId' => '' ) ), 'Notification messageId is mandatory' );
+		check( ! \MohFam\Mail\acceptedNotification( array( 'success' => false, 'http_code' => 201, 'messageId' => '<id@example>' ) ), 'Notification failure cannot qualify' );
+		clearRate(); $GLOBALS['transport_status'] = 500;
+		$beforeRejectedConfirmation = count( $GLOBALS['confirmation_requests'] );
+		$beforeRejectedDeferred = count( $GLOBALS['deferred_contacts'] );
+		$rejected = request();
+		check( ! $rejected->success && count( $GLOBALS['deferred_contacts'] ) === $beforeRejectedDeferred && count( $GLOBALS['confirmation_requests'] ) === $beforeRejectedConfirmation, 'Notification failure never sends or registers confirmation' );
+		clearRate(); $GLOBALS['transport_status'] = 201;
+		$GLOBALS['response_order'] = array();
+		$beforeConfirmation = count( $GLOBALS['confirmation_requests'] );
+		$confirmedVisitor = request();
+		$confirmationJob = end( $GLOBALS['deferred_contacts'] );
+		check( $confirmedVisitor->success && count( $GLOBALS['confirmation_requests'] ) === $beforeConfirmation && array( 'notification' ) === $GLOBALS['response_order'], 'Accepted notification returns success before confirmation is attempted' );
+		check( '<test-123@brevo.example>' === $confirmationJob['args'][5], 'Accepted notification ID passed to shutdown callback' );
+		$GLOBALS['confirmation_status'] = 503;
+		$GLOBALS['confirmation_body'] = '{"message":"private provider body test-only-not-a-real-api-key"}';
+		$GLOBALS['contact_responses'] = array( array( 200, array( 'id' => 10, 'attributes' => array() ) ), array( 204, '' ) );
+		ob_start(); call_user_func_array( $confirmationJob['callback'], $confirmationJob['args'] ); $confirmationOutput = ob_get_clean();
+		check( array( 'notification', 'finished', 'contact', 'contact', 'confirmation' ) === $GLOBALS['response_order'], 'Order is accepted notification, response finish, existing contact sync, then confirmation' );
+		check( '' === $confirmationOutput && $confirmedVisitor->success && 200 === $confirmedVisitor->status, 'Confirmation failure cannot alter or echo into visitor response' );
+		check( count( $GLOBALS['confirmation_requests'] ) === $beforeConfirmation + 1, 'Failed confirmation is attempted exactly once, never retried' );
+		$confirmationLog = file_get_contents( $fixture . '/private/mohfam-mail.log' );
+		check( str_contains( $confirmationLog, 'confirmation_provider_rejected' ) && ! str_contains( $confirmationLog, 'private provider body' ) && ! str_contains( $confirmationLog, 'test-only-not-a-real-api-key' ), 'Confirmation errors are privately sanitized' );
+		$withoutReceipt = $confirmationJob['args']; $withoutReceipt[5] = '';
+		$GLOBALS['contact_responses'] = array( array( 404, array() ), array( 201, array( 'id' => 10 ) ) );
+		$beforeNoReceipt = count( $GLOBALS['confirmation_requests'] );
+		call_user_func_array( $confirmationJob['callback'], $withoutReceipt );
+		check( count( $GLOBALS['confirmation_requests'] ) === $beforeNoReceipt, 'Legacy contact jobs without notification receipt never send a confirmation' );
+		$otherSite = $confirmationJob['args']; $otherSite[0] = 'mohfamcarwash.com';
+		$GLOBALS['contact_responses'] = array( array( 404, array() ), array( 201, array( 'id' => 10 ) ) );
+		call_user_func_array( $confirmationJob['callback'], $otherSite );
+		check( count( $GLOBALS['confirmation_requests'] ) === $beforeNoReceipt, 'No new confirmation behavior on another site' );
+		$GLOBALS['confirmation_status'] = 201; $GLOBALS['confirmation_body'] = '{"messageId":"<confirmation-test@brevo.example>"}';
+		check( \MohFam\Mail\sendInquiryConfirmation( $fields, ABSPATH, $reference ), 'Confirmation requires and accepts 201 plus messageId' );
+		$GLOBALS['confirmation_body'] = '{}';
+		check( ! \MohFam\Mail\sendInquiryConfirmation( $fields, ABSPATH, $reference ), 'Confirmation rejects 201 without messageId' );
 		echo 'Passed ' . $GLOBALS['checks'] . " offline inquiry checks; no network or email used.\n";
 	} finally { removeFixture( $fixture ); }
 }

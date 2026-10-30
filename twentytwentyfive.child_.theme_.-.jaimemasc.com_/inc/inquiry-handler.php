@@ -143,7 +143,7 @@ function mohfam_handle_form_submission() {
 	if ( ! $result['success'] ) {
 		mohfam_inquiry_error( 'We could not send your inquiry. Please try again later.', 503, $result['reference'] );
 	}
-	\MohFam\Mail\deferContactSync( $site, $fields, ABSPATH, $result['reference'] );
+	\MohFam\Mail\deferContactSync( $site, $fields, ABSPATH, $result['reference'], $result );
 	$data = array( 'message' => 'Thank you. Your inquiry was sent to the MohFam team. Reference: ' . $result['reference'] . '.' );
 	\MohFam\Mail\prepareContactResponse( strlen( wp_json_encode( array( 'success' => true, 'data' => $data ) ) ) );
 	wp_send_json_success( $data );

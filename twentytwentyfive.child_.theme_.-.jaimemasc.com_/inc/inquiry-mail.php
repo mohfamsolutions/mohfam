@@ -234,27 +234,32 @@ function finishContactResponse(): bool {
 }
 
 /** Register in memory only; never schedules a WP-Cron event or loopback. */
-function deferContactSync( string $site, array $fields, string $siteRoot, string $reference ): void {
+function deferContactSync( string $site, array $fields, string $siteRoot, string $reference, array $notification = array() ): void {
 	try {
 		$contact = array_intersect_key( $fields, array_flip( array( 'name', 'email', 'service', 'marketing_opt_in' ) ) );
 		$date = ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'America/Los_Angeles' ) ) )->format( 'Y-m-d' );
-		register_shutdown_function( __NAMESPACE__ . '\\runContactAfterResponse', $site, $contact, $siteRoot, $reference, $date );
+		$notificationId = acceptedNotification( $notification ) ? $notification['messageId'] : '';
+		register_shutdown_function( __NAMESPACE__ . '\\runContactAfterResponse', $site, $contact, $siteRoot, $reference, $date, $notificationId );
 		logContactEvent( $siteRoot, $reference, 'contact_deferred' );
 	} catch ( \Throwable $error ) {
 		logContactEvent( $siteRoot, $reference, 'contact_defer_failed' );
 	}
 }
 
-function runContactAfterResponse( string $site, array $fields, string $siteRoot, string $reference, string $date ): void {
+function runContactAfterResponse( string $site, array $fields, string $siteRoot, string $reference, string $date, string $notificationId = '' ): void {
 	try {
 		ignore_user_abort( true );
-		@set_time_limit( 35 );
+		@set_time_limit( 45 );
 		if ( ! finishContactResponse() ) {
 			logContactEvent( $siteRoot, $reference, 'contact_response_finish_failed' );
 			return;
 		}
 		logContactEvent( $siteRoot, $reference, 'contact_after_response_started' );
 		syncInquiryContact( $site, $fields, $siteRoot, $reference, $date );
+		// Contact behavior stays first and unchanged. Confirmation is mohfam.co only.
+		if ( 'mohfam.co' === $site && validMessageId( $notificationId ) ) {
+			sendInquiryConfirmation( $fields, $siteRoot, $reference );
+		}
 	} catch ( \Throwable $error ) {
 		logContactEvent( $siteRoot, $reference, 'contact_after_response_failed' );
 	}
@@ -381,6 +386,7 @@ function inquiryPayload( string $sitePrefix, array $fields, string $reference, \
 		$html .= '<tr><th style="text-align:left;vertical-align:top;padding:8px">' . htmlspecialchars( $label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ) . '</th><td style="padding:8px">' . nl2br( htmlspecialchars( $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ) ) . '</td></tr>';
 	}
 	return array(
+		'tags' => array( 'inquiry-notification' ),
 		'sender' => array( 'name' => 'MohFam Website', 'email' => 'website@mohfam.co' ),
 		'to' => array( array( 'email' => 'mohfamsolutions@gmail.com', 'name' => 'MohFam' ) ),
 		'replyTo' => array( 'email' => $fields['email'], 'name' => $fields['name'] ),
@@ -388,6 +394,68 @@ function inquiryPayload( string $sitePrefix, array $fields, string $reference, \
 		'textContent' => $text,
 		'htmlContent' => $html . '</table></body></html>',
 	);
+}
+
+function validMessageId( $messageId ): bool {
+	return is_string( $messageId ) && 1 === preg_match( '/\A[<>A-Za-z0-9@._:+\/-]{1,512}\z/', $messageId );
+}
+
+function acceptedNotification( array $result ): bool {
+	return true === ( $result['success'] ?? false ) && 201 === ( $result['http_code'] ?? 0 ) && validMessageId( $result['messageId'] ?? null );
+}
+
+/** Strictly allowlisted body fields: never read company, message, or page_url. */
+function confirmationPayload( array $fields, string $reference ): array {
+	if ( ! preg_match( '/\A[a-f0-9]{24}\z/', $reference ) ) {
+		throw new \InvalidArgumentException( 'confirmation_reference_invalid' );
+	}
+	$safe = validateFields( array(
+		'name' => $fields['name'] ?? '',
+		'email' => $fields['email'] ?? '',
+		'service' => $fields['service'] ?? '',
+		'message' => 'confirmation',
+		'page_url' => 'https://mohfam.co/',
+	), array( 'Security Services', 'Commercial Cleaning', 'Pool Cleaning', 'Landscaping (Waitlist)', 'Car Wash', 'General Inquiry' ) );
+	$firstName = explode( ' ', $safe['name'], 2 )[0];
+	$text = 'Hi ' . $firstName . ",\n\n"
+		. 'Thanks for contacting MohFam. We received your ' . $safe['service'] . " request and will get back to you within 1 business day.\n\n"
+		. 'Reference: ' . $reference . "\n\n"
+		. "Need help sooner? Call +1 (818) 818-1181.\n\n"
+		. "— The MohFam Team\nMohFam | Los Angeles, CA | mohfam.co";
+	$escape = static function ( $value ) { return htmlspecialchars( $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ); };
+	$logo = 'https://mohfam.co/wp-content/themes/twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/images/mohfam-logo.png';
+	$html = '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
+		. '<body style="margin:0;padding:0;background:#f9f9f7;color:#1a1a1b;font-family:Arial,sans-serif;-webkit-text-size-adjust:100%">'
+		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f7"><tr><td align="center" style="padding:24px 12px">'
+		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-top:4px solid #c5a059"><tr><td style="padding:24px">'
+		. '<img src="' . $logo . '" alt="MohFam" width="80" height="80" style="display:block;width:80px;height:80px;border:0;margin:0 0 24px">'
+		. '<p style="margin:0 0 16px;font-size:18px;line-height:1.5">Hi ' . $escape( $firstName ) . ',</p>'
+		. '<p style="margin:0 0 20px;font-size:16px;line-height:1.6">Thanks for contacting MohFam. We received your ' . $escape( $safe['service'] ) . ' request and will get back to you within 1 business day.</p>'
+		. '<p style="margin:0 0 20px;padding:12px;background:#f9f9f7;font-size:14px;line-height:1.6;overflow-wrap:anywhere">Reference: <strong>' . $escape( $reference ) . '</strong></p>'
+		. '<p style="margin:0 0 20px;font-size:16px;line-height:1.6">Need help sooner? Call <a href="tel:+18188181181" style="color:#775a19">+1 (818) 818-1181</a>.</p>'
+		. '<p style="margin:0 0 24px;font-size:16px;line-height:1.6">— The MohFam Team</p>'
+		. '<p style="margin:0;padding-top:16px;border-top:1px solid #e5e5e5;color:#626267;font-size:13px;line-height:1.6">MohFam | Los Angeles, CA | <a href="https://mohfam.co/" style="color:#775a19">mohfam.co</a></p>'
+		. '</td></tr></table></td></tr></table></body></html>';
+	return array(
+		'sender' => array( 'name' => 'MohFam', 'email' => 'website@mohfam.co' ),
+		'to' => array( array( 'email' => $safe['email'], 'name' => $safe['name'] ) ),
+		'replyTo' => array( 'email' => 'mohfamsolutions@gmail.com', 'name' => 'MohFam' ),
+		'subject' => 'We received your request — MohFam',
+		'textContent' => $text,
+		'htmlContent' => $html,
+		'tags' => array( 'inquiry-confirmation' ),
+	);
+}
+
+/** One attempt only. Never writes output, retries, or changes an inquiry result. */
+function sendInquiryConfirmation( array $fields, string $siteRoot, string $reference ): bool {
+	try {
+		$payload = confirmationPayload( $fields, $reference );
+		return sendEmailPayload( $payload, $siteRoot, $reference, 'confirmation_' )['success'];
+	} catch ( \Throwable $error ) {
+		logContactEvent( $siteRoot, $reference, 'confirmation_internal_error' );
+		return false;
+	}
 }
 
 /** Only transport metadata is written; never include provider response bodies. */
@@ -405,40 +473,45 @@ function writeLog( $file, string $reference, string $status, int $httpCode = 0, 
 	return $ok;
 }
 
-/**
- * Reusable sender. No WordPress APIs, SDK, visitor confirmation, or mail fallback.
- * Caller supplies the cPanel site root and validated fields.
- */
+/** Reusable notification sender. Only the after-response worker confirms receipt. */
 function sendInquiry( string $sitePrefix, array $fields, string $siteRoot ): array {
 	$reference = bin2hex( random_bytes( 12 ) );
+	try {
+		$fields = validateFields( $fields, array( $fields['service'] ?? '' ) );
+		$payload = inquiryPayload( $sitePrefix, $fields, $reference, new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) ) );
+		return sendEmailPayload( $payload, $siteRoot, $reference );
+	} catch ( \Throwable $error ) {
+		return array( 'success' => false, 'reference' => $reference, 'messageId' => '', 'http_code' => 0 );
+	}
+}
+
+/** Shared TLS-verified transport; statuses use fixed internal prefixes only. */
+function sendEmailPayload( array $payload, string $siteRoot, string $reference, string $statusPrefix = '' ): array {
 	$failure = array( 'success' => false, 'reference' => $reference, 'messageId' => '', 'http_code' => 0 );
 	$log = false;
 	try {
-		// Validate again at the reusable boundary, including raw header characters.
-		$fields = validateFields( $fields, array( $fields['service'] ?? '' ) );
 		$private = privateDirectory( $siteRoot );
 		$logPath = $private . '/mohfam-mail.log';
 		if ( is_link( $logPath ) ) {
 			return $failure;
 		}
 		$log = @fopen( $logPath, 'ab' );
-		if ( false === $log || ! @chmod( $logPath, 0600 ) || ! writeLog( $log, $reference, 'attempt' ) ) {
+		if ( false === $log || ! @chmod( $logPath, 0600 ) || ! writeLog( $log, $reference, $statusPrefix . 'attempt' ) ) {
 			return $failure;
 		}
 		try {
 			$key = loadApiKey( $private );
 		} catch ( \Throwable $error ) {
-			writeLog( $log, $reference, 'config_unavailable_or_invalid' );
+			writeLog( $log, $reference, $statusPrefix . 'config_unavailable_or_invalid' );
 			return $failure;
 		}
 		if ( ! function_exists( 'curl_init' ) || ! in_array( 'https', curl_version()['protocols'] ?? array(), true ) ) {
-			writeLog( $log, $reference, 'curl_https_unavailable' );
+			writeLog( $log, $reference, $statusPrefix . 'curl_https_unavailable' );
 			return $failure;
 		}
-		$payload = inquiryPayload( $sitePrefix, $fields, $reference, new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) ) );
 		$curl = curl_init( 'https://api.brevo.com/v3/smtp/email' );
 		if ( false === $curl ) {
-			writeLog( $log, $reference, 'curl_initialization_failed' );
+			writeLog( $log, $reference, $statusPrefix . 'curl_initialization_failed' );
 			return $failure;
 		}
 		try {
@@ -455,14 +528,14 @@ function sendInquiry( string $sitePrefix, array $fields, string $siteRoot ): arr
 				CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
 			) );
 			if ( ! $optionsSet ) {
-				writeLog( $log, $reference, 'transport_options_failed' );
+				writeLog( $log, $reference, $statusPrefix . 'transport_options_failed' );
 				return $failure;
 			}
 			$response = curl_exec( $curl );
 			$httpCode = (int) curl_getinfo( $curl, CURLINFO_HTTP_CODE );
 			$failure['http_code'] = $httpCode;
 			if ( false === $response ) {
-				writeLog( $log, $reference, 'transport_error_' . (int) curl_errno( $curl ), $httpCode );
+				writeLog( $log, $reference, $statusPrefix . 'transport_error_' . (int) curl_errno( $curl ), $httpCode );
 				return $failure;
 			}
 		} finally {
@@ -471,16 +544,16 @@ function sendInquiry( string $sitePrefix, array $fields, string $siteRoot ): arr
 		}
 		$result = json_decode( $response, true );
 		$messageId = is_array( $result ) ? ( $result['messageId'] ?? '' ) : '';
-		if ( 201 !== $httpCode || ! is_string( $messageId ) || ! preg_match( '/\A[<>A-Za-z0-9@._:+\/-]{1,512}\z/', $messageId ) ) {
+		if ( 201 !== $httpCode || ! validMessageId( $messageId ) ) {
 			// Fixed error categories prevent provider echoes from leaking input or keys.
-			writeLog( $log, $reference, 201 === $httpCode ? 'invalid_message_id' : 'provider_rejected', $httpCode );
+			writeLog( $log, $reference, $statusPrefix . ( 201 === $httpCode ? 'invalid_message_id' : 'provider_rejected' ), $httpCode );
 			return $failure;
 		}
-		writeLog( $log, $reference, 'accepted', $httpCode, $messageId );
+		writeLog( $log, $reference, $statusPrefix . 'accepted', $httpCode, $messageId );
 		return array( 'success' => true, 'reference' => $reference, 'messageId' => $messageId, 'http_code' => $httpCode );
 	} catch ( \Throwable $error ) {
 		if ( is_resource( $log ) ) {
-			writeLog( $log, $reference, 'internal_error' );
+			writeLog( $log, $reference, $statusPrefix . 'internal_error' );
 		}
 		return $failure;
 	} finally {
