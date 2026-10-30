@@ -139,6 +139,8 @@ img { max-width: 100%; }
 .mohfam-contact-intro { max-width: 840px; }
 .mohfam-form input, .mohfam-form select, .mohfam-form textarea, .mohfam-inquiry-form input, .mohfam-inquiry-form select, .mohfam-inquiry-form textarea { min-height: 48px; font-size: 16px; border-radius: 4px; }
 .mohfam-form label, .mohfam-inquiry-form label { font-size: 13px; }
+.mohfam-form .mohfam-marketing-opt-in, .mohfam-inquiry-form .mohfam-marketing-opt-in { display: flex; align-items: flex-start; gap: 12px; grid-column: 1 / -1; min-height: 44px; font-weight: 400; line-height: 1.6; letter-spacing: normal; text-transform: none; cursor: pointer; }
+.mohfam-form .mohfam-marketing-opt-in input, .mohfam-inquiry-form .mohfam-marketing-opt-in input { display: inline-block; flex: 0 0 18px; width: 18px; height: 18px; min-height: 18px; margin: 2px 0 0; padding: 0; accent-color: var(--mohfam-gold-dark); }
 .mohfam-form, .mohfam-inquiry-form { border-radius: var(--mohfam-radius); }
 .mohfam-cleaning-photo { aspect-ratio: 1.15; border-radius: var(--mohfam-radius); background: url("../images/stock-office-lounge.jpg") center/cover; }
 .mohfam-cleaning-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-top: 40px; }

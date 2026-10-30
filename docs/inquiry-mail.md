@@ -29,6 +29,29 @@ The key is placed by the owner, never requested or committed. `privateDirectory(
 
 The current sender is `MohFam Website <website@mohfam.co>`; recipient is `MohFam <mohfamsolutions@gmail.com>`. Reply-To is the validated visitor. Subject is `[MohFam] {service} inquiry — {name}`. Plain text and escaped HTML include all visible fields, source URL, reference, and submit time in UTC and America/Los_Angeles (including DST). POST goes only to `https://api.brevo.com/v3/smtp/email`, TLS verification on, no redirects, 10-second total timeout, 5-second connect timeout. Do not retry automatically after an ambiguous timeout.
 
+## Contact sync and optional newsletter consent
+
+After notification acceptance, the handler schedules `mohfam_sync_inquiry_contact` in WordPress Cron. The form request never calls the contact API or waits for its 10-second timeout. Queue and worker failures only write sanitized private metadata; they never change the email response. The shutdown callback asks WordPress to spawn its nonblocking cron loopback. A working WP-Cron loopback, normal later site traffic, or an externally configured scheduler is required to drain scheduled events; disabled/alternate WP-Cron retains its existing scheduling policy. There is no automatic contact retry and no email resend.
+
+Both forms have an optional checkbox named `marketing_opt_in`, value `1`, explicitly labeled and unchecked by default. Absence means false; arbitrary values and arrays are rejected before sending. The existing notification payload and success response are unchanged. The submitted checkbox value is stored in the existing private WordPress inquiry record, separate from historical contact consent.
+
+`siteSettings()` is the single trusted map:
+
+| Site | Inquiry list | Newsletter list | Prefix |
+| --- | --- | --- | --- |
+| mohfam.co | 3 | 4 | [MohFam] |
+| mohfamsecurity.com | 11 | null | [MohFam Security] |
+| mohfamcommercialcleaning.com | 12 | null | [MohFam Commercial Cleaning] |
+| mohfampoolcleaning.com | 13 | null | [MohFam Pool Cleaning] |
+| mohfamlandscaping.com | 14 | null | [MohFam Landscaping] |
+| mohfamcarwash.com | 15 | null | [MohFam Car Wash] |
+
+Only mohfam.co is deployed. The queued data is limited to name, email, service, the submitted consent, trusted site, reference, and the inquiry date in America/Los_Angeles; it excludes the message body and API key. `syncInquiryContact()` uses the same private config. It GETs the URL-encoded contact email to distinguish new and existing contacts, then POSTs to `https://api.brevo.com/v3/contacts` with `updateEnabled: true`. Contact requests verify TLS, prohibit redirects, and have a 10-second total timeout each. Create 201 and update 204 responses count as successful syncs.
+
+Attributes are FIRSTNAME/LASTNAME (split on the first space; single-word names have empty LASTNAME), SERVICE_INTEREST, SOURCE_SITE, LAST_INQUIRY_AT (the inquiry's Los Angeles date), and MARKETING_OPT_IN. New unchecked contacts get false; checked contacts get true and add the configured newsletter list when non-null. Existing true remains true. Existing unchecked updates never write false, preserving a concurrent opt-in rather than overwriting it. A private 0600 `mohfam-contact-sync.lock` serializes lookup/upsert operations from integrations using this module under this hosting account. If lookup fails or is malformed, the worker skips the update rather than guessing consent. Never send `unlinkListIds`, `emailBlacklisted`, or any suppression reset; listIds only adds the inquiry list and, on explicit opt-in, the newsletter list. Membership in other lists is preserved by Brevo's additive list behavior.
+
+Log statuses include `contact_queued`, `contact_queue_failed`, `contact_synced`, `contact_lookup_failed`, `contact_lookup_invalid`, `contact_upsert_failed`, and `contact_sync_internal_error`. Only reference, timestamp, HTTP code, and a fixed status are logged, never contact data, raw API errors, or keys. New contact-sync live verification requires a separate authorized test and confirmation in list #3; the earlier email-only verification below does not verify this extension.
+
 ## Verification and release gate
 
 1. Run PHP syntax, `php tests/inquiry-mail-test.php`, and `node tests/forms-test.cjs`. Tests use synthetic data and mocked cURL; they never contact Brevo or send email. PHP tests cover server validation, origin/CSRF/timing, honeypot, rate limits, provider responses, escaped payloads, DST, secret-safe logging, and readiness. Form tests cover successful clearing, retained typed fields on failure, retries, missing CAPTCHA, and session failures.

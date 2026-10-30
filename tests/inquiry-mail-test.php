@@ -2,10 +2,19 @@
 /** All transport calls are replaced below. No real API key or network is used. */
 namespace MohFam\Mail {
 	function curl_version() { return array( 'protocols' => array( 'https' ) ); }
-	function curl_init( $url ) { $GLOBALS['transport_calls']++; $GLOBALS['transport_url'] = $url; return new \stdClass(); }
-	function curl_setopt_array( $curl, $options ) { $GLOBALS['transport_options'] = $options; return true; }
-	function curl_exec( $curl ) { return $GLOBALS['transport_body']; }
-	function curl_getinfo( $curl, $option ) { return $GLOBALS['transport_status']; }
+	function curl_init( $url ) { $GLOBALS['transport_calls']++; $GLOBALS['transport_url'] = $url; return (object) array( 'url' => $url ); }
+	function curl_setopt_array( $curl, $options ) { $GLOBALS['transport_options'] = $options; $curl->options = $options; return true; }
+	function curl_exec( $curl ) {
+		if ( str_contains( $curl->url, '/v3/contacts' ) ) {
+			if ( empty( $GLOBALS['contact_responses'] ) ) { throw new \RuntimeException( 'Unexpected mocked contact API call' ); }
+			$next = array_shift( $GLOBALS['contact_responses'] );
+			$curl->status = $next[0];
+			$GLOBALS['contact_requests'][] = array( 'url' => $curl->url, 'options' => $curl->options );
+			return is_array( $next[1] ) ? json_encode( $next[1] ) : $next[1];
+		}
+		return $GLOBALS['transport_body'];
+	}
+	function curl_getinfo( $curl, $option ) { return $curl->status ?? $GLOBALS['transport_status']; }
 	function curl_errno( $curl ) { return 28; }
 	function curl_close( $curl ) {}
 }
@@ -32,6 +41,11 @@ namespace {
 	}
 	class WP_Error {}
 	function add_action( ...$args ) {}
+	function wp_schedule_single_event( $time, $hook, $args, $wp_error ) {
+		if ( ! empty( $GLOBALS['queue_fail'] ) ) { return new WP_Error(); }
+		$GLOBALS['scheduled_contacts'][] = array( 'hook' => $hook, 'args' => $args );
+		return true;
+	}
 	function home_url( $path ) { return 'https://mohfam.co' . $path; }
 	function wp_parse_url( $value ) { return parse_url( $value ); }
 	function wp_unslash( $value ) { return stripslashes( $value ); }
@@ -87,6 +101,8 @@ namespace {
 		expectInvalid( array_replace( $fields, array( 'email' => 'invalid' ) ), 'Reject invalid email' );
 		expectInvalid( array_replace( $fields, array( 'service' => 'Unknown Service' ) ), 'Reject unsupported service' );
 		expectInvalid( array_replace( $fields, array( 'message' => "bad\x00body" ) ), 'Reject message controls' );
+		expectInvalid( array_replace( $fields, array( 'marketing_opt_in' => 'true' ) ), 'Reject unsupported checkbox values' );
+		expectInvalid( array_replace( $fields, array( 'marketing_opt_in' => array( '1' ) ) ), 'Reject array checkbox values' );
 		$unicode = array_replace( $fields, array( 'name' => str_repeat( 'é', 120 ) ) );
 		check( \MohFam\Mail\validateFields( $unicode, array( 'Car Wash' ) )['name'] === $unicode['name'], 'UTF-8 length counts characters' );
 		$summer = \MohFam\Mail\inquiryPayload( 'MohFam', $fields, 'test-ref', new \DateTimeImmutable( '2026-07-01T12:00:00Z' ) );
@@ -152,9 +168,15 @@ namespace {
 		check( $GLOBALS['transport_calls'] === $before, 'All invalid requests avoided transport' );
 		clearRate(); $result = request();
 		check( $result->success && $GLOBALS['transport_calls'] === $before + 1, 'Valid complete handler submits once' );
+		$queued = end( $GLOBALS['scheduled_contacts'] );
+		check( 'mohfam_sync_inquiry_contact' === $queued['hook'] && false === $queued['args'][1]['marketing_opt_in'], 'Successful email queues unchecked contact sync' );
+		check( ! isset( $queued['args'][1]['message'] ) && ! isset( $queued['args'][1]['phone'] ), 'Queue excludes inquiry message and unnecessary fields' );
+		check( ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'America/Los_Angeles' ) ) )->format( 'Y-m-d' ) === $queued['args'][3], 'Queue captures Los Angeles inquiry date' );
 		check( 429 === request()->status, 'Handler rate limit stops duplicate transport' );
 		clearRate(); $GLOBALS['transport_status'] = 503;
+		$queuedCount = count( $GLOBALS['scheduled_contacts'] );
 		$result = request(); check( ! $result->success && 503 === $result->status, 'Provider failure never reports success' );
+		check( $queuedCount === count( $GLOBALS['scheduled_contacts'] ), 'Failed notification never queues contact sync' );
 		$_SERVER = array( 'REQUEST_METHOD' => 'POST', 'HTTP_ORIGIN' => 'https://mohfam.co', 'REMOTE_ADDR' => '192.0.2.1' );
 		$beforeSession = $GLOBALS['transport_calls'];
 		try { mohfam_inquiry_session(); } catch ( JsonResponse $session ) {
@@ -163,6 +185,70 @@ namespace {
 			check( mohfam_inquiry_check_timing( $session->data['form_token'], time() + 3 ), 'Signed three-second minimum works' );
 		}
 		check( $beforeSession === $GLOBALS['transport_calls'], 'Session initialization sends no email' );
+
+		// Contact API cases use a separate deterministic response queue. No real API.
+		$contact = array_intersect_key( $fields, array_flip( array( 'name', 'email', 'service' ) ) );
+		$contact['marketing_opt_in'] = false;
+		$sync = static function ( $data, $responses ) {
+			$GLOBALS['contact_responses'] = $responses;
+			$GLOBALS['contact_requests'] = array();
+			return \MohFam\Mail\syncInquiryContact( 'mohfam.co', $data, ABSPATH, 'test-contact-ref', '2026-10-29' );
+		};
+		$lastPayload = static function () {
+			$last = end( $GLOBALS['contact_requests'] );
+			return json_decode( $last['options'][ CURLOPT_POSTFIELDS ], true );
+		};
+		check( $sync( $contact, array( array( 404, array( 'code' => 'document_not_found' ) ), array( 201, array( 'id' => 10 ) ) ) ), 'New contact created' );
+		$payload = $lastPayload();
+		check( array( 3 ) === $payload['listIds'] && true === $payload['updateEnabled'], 'Inquiry list only with additive upsert' );
+		check( false === $payload['attributes']['MARKETING_OPT_IN'], 'New unchecked contact is false' );
+		check( 'Taylor' === $payload['attributes']['FIRSTNAME'] && '<Example>' === $payload['attributes']['LASTNAME'], 'Split name on first space' );
+		check( 'mohfam.co' === $payload['attributes']['SOURCE_SITE'] && '2026-10-29' === $payload['attributes']['LAST_INQUIRY_AT'] && 'Car Wash' === $payload['attributes']['SERVICE_INTEREST'], 'Source, LA date, and service attributes' );
+		$requestOptions = end( $GLOBALS['contact_requests'] )['options'];
+		check( 10 === $requestOptions[CURLOPT_TIMEOUT] && true === $requestOptions[CURLOPT_SSL_VERIFYPEER] && 2 === $requestOptions[CURLOPT_SSL_VERIFYHOST], 'Contact API timeout and TLS' );
+		check( $GLOBALS['contact_requests'][0]['url'] === 'https://api.brevo.com/v3/contacts/visitor%40example.com?identifierType=email_id', 'Lookup email URL encoded' );
+		check( end( $GLOBALS['contact_requests'] )['url'] === 'https://api.brevo.com/v3/contacts', 'Exact contact POST endpoint' );
+		$opted = array_replace( $contact, array( 'marketing_opt_in' => true, 'name' => 'Taylor One Two' ) );
+		check( $sync( $opted, array( array( 404, array() ), array( 201, array( 'id' => 10 ) ) ) ), 'New opt-in succeeds' );
+		$payload = $lastPayload();
+		check( array( 3, 4 ) === $payload['listIds'] && true === $payload['attributes']['MARKETING_OPT_IN'], 'Opt-in adds Newsletter list 4 and true attribute' );
+		check( 'One Two' === $payload['attributes']['LASTNAME'], 'Remaining full name retained as last name' );
+		$single = \MohFam\Mail\contactPayload( 'mohfam.co', array_replace( $contact, array( 'name' => 'Taylor' ) ), '2026-10-29', null );
+		check( '' === $single['attributes']['LASTNAME'], 'Single word leaves last name empty' );
+		$existing = array( 'id' => 10, 'attributes' => array( 'MARKETING_OPT_IN' => false ), 'listIds' => array( 3 ) );
+		check( $sync( $opted, array( array( 200, $existing ), array( 204, '' ) ) ), 'Existing contact updated, not duplicated' );
+		$payload = $lastPayload();
+		check( true === $payload['updateEnabled'] && array( 3, 4 ) === $payload['listIds'], 'Existing contact can opt in' );
+		$existing['attributes']['MARKETING_OPT_IN'] = true; $existing['listIds'] = array( 3, 4, 99 );
+		check( $sync( $contact, array( array( 200, $existing ), array( 204, '' ) ) ), 'Later unchecked inquiry syncs' );
+		$payload = $lastPayload();
+		check( true === $payload['attributes']['MARKETING_OPT_IN'] && array( 3 ) === $payload['listIds'] && ! isset( $payload['unlinkListIds'] ), 'Prior opt-in and Newsletter membership never removed' );
+		check( ! isset( $payload['emailBlacklisted'] ), 'Sync never resets unsubscribe/suppression status' );
+		$existing['attributes']['MARKETING_OPT_IN'] = false;
+		check( $sync( $contact, array( array( 200, $existing ), array( 204, '' ) ) ), 'Unchecked existing contact syncs' );
+		check( ! array_key_exists( 'MARKETING_OPT_IN', $lastPayload()['attributes'] ), 'Unchecked updates omit false to protect concurrent opt-ins' );
+		check( $sync( $contact, array( array( 200, array( 'id' => 10 ) ), array( 204, '' ) ) ), 'Existing contacts without attributes can receive inquiry details safely' );
+		foreach ( array( 'mohfamsecurity.com' => 11, 'mohfamcommercialcleaning.com' => 12, 'mohfampoolcleaning.com' => 13, 'mohfamlandscaping.com' => 14, 'mohfamcarwash.com' => 15 ) as $site => $list ) {
+			$mapped = \MohFam\Mail\contactPayload( $site, $opted, '2026-10-29', null );
+			check( array( $list ) === $mapped['listIds'] && $site === $mapped['attributes']['SOURCE_SITE'], 'Other sites use configured inquiry list without a Newsletter list' );
+		}
+		check( ! $sync( $contact, array( array( 500, array( 'message' => 'test-only-not-a-real-api-key' ) ) ) ) && 1 === count( $GLOBALS['contact_requests'] ), 'Failed lookup never risks overwriting unknown consent' );
+		check( ! $sync( $contact, array( array( 200, 'malformed' ) ) ), 'Malformed existing contact fails safely' );
+		check( ! $sync( $contact, array( array( 404, array() ), array( 503, array( 'message' => 'private rejected contact body' ) ) ) ), 'Contact upsert failure is caught' );
+		check( ! $sync( $contact, array( array( 0, false ) ) ), 'Contact transport timeout is caught' );
+		$GLOBALS['transport_status'] = 201; $GLOBALS['transport_body'] = '{"messageId":"<test-123@brevo.example>"}';
+		clearRate(); $GLOBALS['queue_fail'] = true;
+		check( request()->success, 'Queue failure never changes accepted email success' );
+		$GLOBALS['queue_fail'] = false;
+		clearRate(); $visitor = request( array( 'marketing_opt_in' => '1' ) );
+		$job = end( $GLOBALS['scheduled_contacts'] );
+		check( $visitor->success && true === $job['args'][1]['marketing_opt_in'], 'Checked consent carried to deferred worker' );
+		$GLOBALS['contact_responses'] = array( array( 404, array() ), array( 503, array( 'message' => 'private rejected contact body' ) ) );
+		mohfam_sync_inquiry_contact( ...$job['args'] );
+		check( $visitor->success && 200 === $visitor->status, 'Contact API failure cannot change completed visitor success' );
+		$contactLog = file_get_contents( $fixture . '/private/mohfam-mail.log' );
+		check( str_contains( $contactLog, 'contact_upsert_failed' ) && str_contains( $contactLog, 'contact_queue_failed' ), 'Contact failure categories privately logged' );
+		check( ! str_contains( $contactLog, 'private rejected contact body' ) && ! str_contains( $contactLog, 'test-only-not-a-real-api-key' ) && ! str_contains( $contactLog, 'visitor@example.com' ), 'Contact logs contain no provider bodies, keys, or email addresses' );
 		echo 'Passed ' . $GLOBALS['checks'] . " offline inquiry checks; no network or email used.\n";
 	} finally { removeFixture( $fixture ); }
 }

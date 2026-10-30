@@ -2,6 +2,22 @@
 /** Plain PHP inquiry validation, private storage, and Brevo transport. */
 namespace MohFam\Mail;
 
+/** Trusted site settings. Adding a map entry does not deploy to another site. */
+function siteSettings( string $site ): array {
+	$sites = array(
+		'mohfam.co' => array( 'inquiries' => 3, 'newsletter' => 4, 'prefix' => '[MohFam]' ),
+		'mohfamsecurity.com' => array( 'inquiries' => 11, 'newsletter' => null, 'prefix' => '[MohFam Security]' ),
+		'mohfamcommercialcleaning.com' => array( 'inquiries' => 12, 'newsletter' => null, 'prefix' => '[MohFam Commercial Cleaning]' ),
+		'mohfampoolcleaning.com' => array( 'inquiries' => 13, 'newsletter' => null, 'prefix' => '[MohFam Pool Cleaning]' ),
+		'mohfamlandscaping.com' => array( 'inquiries' => 14, 'newsletter' => null, 'prefix' => '[MohFam Landscaping]' ),
+		'mohfamcarwash.com' => array( 'inquiries' => 15, 'newsletter' => null, 'prefix' => '[MohFam Car Wash]' ),
+	);
+	if ( ! isset( $sites[ $site ] ) ) {
+		throw new \InvalidArgumentException( 'unknown_source_site' );
+	}
+	return $sites[ $site ];
+}
+
 /** Resolve only the sibling private directory of this cPanel site's public_html. */
 function privateDirectory( string $siteRoot ): string {
 	$root = realpath( $siteRoot );
@@ -77,7 +93,145 @@ function validateFields( array $input, array $services ): array {
 	if ( ! filter_var( $fields['email'], FILTER_VALIDATE_EMAIL ) || ! in_array( $fields['service'], $services, true ) ) {
 		throw new \InvalidArgumentException( 'Please check your email address and service interest.' );
 	}
+	$optIn = $input['marketing_opt_in'] ?? false;
+	if ( ! in_array( $optIn, array( false, true, '', '1' ), true ) ) {
+		throw new \InvalidArgumentException( 'Please check your updates and offers selection.' );
+	}
+	$fields['marketing_opt_in'] = true === $optIn || '1' === $optIn;
 	return $fields;
+}
+
+/** Build an additive upsert. Never write false over any existing contact. */
+function contactPayload( string $site, array $fields, string $inquiryDate, ?array $existing ): array {
+	$settings = siteSettings( $site );
+	$date = \DateTimeImmutable::createFromFormat( '!Y-m-d', $inquiryDate );
+	if ( false === $date || $date->format( 'Y-m-d' ) !== $inquiryDate ) {
+		throw new \InvalidArgumentException( 'invalid_inquiry_date' );
+	}
+	$name = explode( ' ', trim( $fields['name'] ), 2 );
+	$optIn = true === ( $fields['marketing_opt_in'] ?? false );
+	$attributes = array(
+		'FIRSTNAME' => $name[0],
+		'LASTNAME' => trim( $name[1] ?? '' ),
+		'SERVICE_INTEREST' => $fields['service'],
+		'SOURCE_SITE' => $site,
+		'LAST_INQUIRY_AT' => $inquiryDate,
+	);
+	// Omitting false on updates also avoids overwriting a concurrent opt-in.
+	if ( $optIn || null === $existing ) {
+		$attributes['MARKETING_OPT_IN'] = $optIn;
+	} elseif ( true === ( $existing['attributes']['MARKETING_OPT_IN'] ?? false ) ) {
+		$attributes['MARKETING_OPT_IN'] = true;
+	}
+	$lists = array( $settings['inquiries'] );
+	if ( $optIn && null !== $settings['newsletter'] ) {
+		$lists[] = $settings['newsletter'];
+	}
+	return array( 'email' => $fields['email'], 'attributes' => $attributes, 'listIds' => $lists, 'updateEnabled' => true );
+}
+
+/** Fixed contact endpoints only; raw provider content is never logged. */
+function contactRequest( string $key, string $email, ?array $payload = null ): array {
+	$url = 'https://api.brevo.com/v3/contacts';
+	if ( null === $payload ) {
+		$url .= '/' . rawurlencode( $email ) . '?identifierType=email_id';
+	}
+	$curl = curl_init( $url );
+	if ( false === $curl ) {
+		throw new \RuntimeException( 'contact_transport_initialization_failed' );
+	}
+	try {
+		$options = array(
+			CURLOPT_POST => null !== $payload,
+			CURLOPT_HTTPHEADER => array( 'api-key: ' . $key, 'accept: application/json', 'content-type: application/json' ),
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_TIMEOUT => 10,
+			CURLOPT_CONNECTTIMEOUT => 5,
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_SSL_VERIFYHOST => 2,
+			CURLOPT_FOLLOWLOCATION => false,
+			CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+		);
+		if ( null !== $payload ) {
+			$options[ CURLOPT_POSTFIELDS ] = json_encode( $payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR );
+		}
+		if ( ! curl_setopt_array( $curl, $options ) ) {
+			throw new \RuntimeException( 'contact_transport_options_failed' );
+		}
+		$body = curl_exec( $curl );
+		return array( 'ok' => false !== $body, 'http_code' => (int) curl_getinfo( $curl, CURLINFO_HTTP_CODE ), 'data' => false === $body ? null : json_decode( $body, true ) );
+	} finally {
+		curl_close( $curl );
+	}
+}
+
+/** Best-effort private metadata only. Logging errors cannot affect visitors. */
+function logContactEvent( string $siteRoot, string $reference, string $status, int $code = 0 ): void {
+	$log = false;
+	try {
+		$path = privateDirectory( $siteRoot ) . '/mohfam-mail.log';
+		if ( is_link( $path ) ) {
+			return;
+		}
+		$log = @fopen( $path, 'ab' );
+		if ( is_resource( $log ) && @chmod( $path, 0600 ) ) {
+			writeLog( $log, $reference, $status, $code );
+		}
+	} catch ( \Throwable $error ) {
+		// No public output or fallback log containing provider errors or contact data.
+	} finally {
+		if ( is_resource( $log ) ) {
+			fclose( $log );
+		}
+	}
+}
+
+/** Run only in a queued worker, after notification acceptance. No mail is sent. */
+function syncInquiryContact( string $site, array $fields, string $siteRoot, string $reference, string $inquiryDate ): bool {
+	$lock = false;
+	try {
+		siteSettings( $site );
+		if ( ! filter_var( $fields['email'] ?? '', FILTER_VALIDATE_EMAIL ) ) {
+			throw new \InvalidArgumentException( 'contact_email_invalid' );
+		}
+		$private = privateDirectory( $siteRoot );
+		$lockPath = $private . '/mohfam-contact-sync.lock';
+		if ( is_link( $lockPath ) ) {
+			throw new \RuntimeException( 'contact_lock_unavailable' );
+		}
+		$lock = @fopen( $lockPath, 'c' );
+		// Shared by these site integrations: serialize lookup/upsert consent decisions.
+		if ( false === $lock || ! @chmod( $lockPath, 0600 ) || ! flock( $lock, LOCK_EX ) ) {
+			throw new \RuntimeException( 'contact_lock_unavailable' );
+		}
+		$key = loadApiKey( $private );
+		$lookup = contactRequest( $key, $fields['email'] );
+		$existing = null;
+		if ( ! $lookup['ok'] || ! in_array( $lookup['http_code'], array( 200, 404 ), true ) ) {
+			logContactEvent( $siteRoot, $reference, 'contact_lookup_failed', $lookup['http_code'] );
+			return false;
+		}
+		if ( 200 === $lookup['http_code'] ) {
+			if ( ! is_array( $lookup['data'] ) || empty( $lookup['data']['id'] ) || ( isset( $lookup['data']['attributes'] ) && ! is_array( $lookup['data']['attributes'] ) ) ) {
+				logContactEvent( $siteRoot, $reference, 'contact_lookup_invalid', 200 );
+				return false;
+			}
+			$existing = $lookup['data'];
+		}
+		$payload = contactPayload( $site, $fields, $inquiryDate, $existing );
+		$response = contactRequest( $key, $fields['email'], $payload );
+		$success = $response['ok'] && in_array( $response['http_code'], array( 201, 204 ), true );
+		logContactEvent( $siteRoot, $reference, $success ? 'contact_synced' : 'contact_upsert_failed', $response['http_code'] );
+		return $success;
+	} catch ( \Throwable $error ) {
+		logContactEvent( $siteRoot, $reference, 'contact_sync_internal_error' );
+		return false;
+	} finally {
+		if ( is_resource( $lock ) ) {
+			flock( $lock, LOCK_UN );
+			fclose( $lock );
+		}
+	}
 }
 
 /** Locked, bounded rate state; stores keyed IP hashes only, never raw addresses. */

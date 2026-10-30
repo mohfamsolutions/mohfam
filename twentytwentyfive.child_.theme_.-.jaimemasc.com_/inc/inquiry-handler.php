@@ -91,6 +91,7 @@ function mohfam_handle_form_submission() {
 	foreach ( array( 'name', 'company', 'email', 'phone', 'service', 'message', 'page_url' ) as $key ) {
 		$input[ $key ] = mohfam_inquiry_post_string( $key );
 	}
+	$input['marketing_opt_in'] = mohfam_inquiry_post_string( 'marketing_opt_in' );
 	try {
 		$fields = \MohFam\Mail\validateFields( $input, array( 'Security Services', 'Commercial Cleaning', 'Pool Cleaning', 'Landscaping (Waitlist)', 'Car Wash', 'General Inquiry' ) );
 	} catch ( \InvalidArgumentException $error ) {
@@ -117,7 +118,9 @@ function mohfam_handle_form_submission() {
 	if ( is_wp_error( $turnstile ) ) {
 		mohfam_inquiry_error( 'Security verification failed. Please refresh the page and try again.', 403 );
 	}
-	$result = \MohFam\Mail\sendInquiry( 'MohFam', $fields, ABSPATH );
+	$site = strtolower( (string) parse_url( home_url( '/' ), PHP_URL_HOST ) );
+	$settings = \MohFam\Mail\siteSettings( $site );
+	$result = \MohFam\Mail\sendInquiry( trim( $settings['prefix'], '[]' ), $fields, ABSPATH );
 	// Preserve the existing private WordPress inbox, but it never determines success.
 	mohfam_store_submission(
 		'Inquiry — ' . sanitize_text_field( $fields['name'] ) . ' — ' . current_time( 'M j, Y g:i a' ),
@@ -133,12 +136,47 @@ function mohfam_handle_form_submission() {
 			'admin_mail_sent' => $result['success'],
 			'mail_reference' => $result['reference'],
 			'mail_message_id' => $result['messageId'],
+			'marketing_opt_in' => $fields['marketing_opt_in'] ? '1' : '0',
 		)
 	);
 	if ( ! $result['success'] ) {
 		mohfam_inquiry_error( 'We could not send your inquiry. Please try again later.', 503, $result['reference'] );
 	}
+	mohfam_queue_inquiry_contact( $site, $fields, $result['reference'] );
 	wp_send_json_success( array( 'message' => 'Thank you. Your inquiry was sent to the MohFam team. Reference: ' . $result['reference'] . '.' ) );
 }
+
+/** Enqueue only minimal contact data. No contact API calls in the form request. */
+function mohfam_queue_inquiry_contact( $site, $fields, $reference ) {
+	try {
+		$contact = array_intersect_key( $fields, array_flip( array( 'name', 'email', 'service', 'marketing_opt_in' ) ) );
+		$date = ( new DateTimeImmutable( 'now', new DateTimeZone( 'America/Los_Angeles' ) ) )->format( 'Y-m-d' );
+		$scheduled = wp_schedule_single_event( time(), 'mohfam_sync_inquiry_contact', array( $site, $contact, $reference, $date ), true );
+		if ( is_wp_error( $scheduled ) || true !== $scheduled ) {
+			\MohFam\Mail\logContactEvent( ABSPATH, $reference, 'contact_queue_failed' );
+			return;
+		}
+		\MohFam\Mail\logContactEvent( ABSPATH, $reference, 'contact_queued' );
+		// WordPress makes a nonblocking loopback cron request; no Brevo work here.
+		add_action( 'shutdown', 'mohfam_spawn_contact_cron' );
+	} catch ( Throwable $error ) {
+		\MohFam\Mail\logContactEvent( ABSPATH, $reference, 'contact_queue_failed' );
+	}
+}
+
+function mohfam_spawn_contact_cron() {
+	try {
+		if ( ! ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) && ! ( defined( 'ALTERNATE_WP_CRON' ) && ALTERNATE_WP_CRON ) ) {
+			spawn_cron();
+		}
+	} catch ( Throwable $error ) {
+		// The queued event remains for the next normal cron run.
+	}
+}
+
+function mohfam_sync_inquiry_contact( $site, $fields, $reference, $date ) {
+	\MohFam\Mail\syncInquiryContact( $site, $fields, ABSPATH, $reference, $date );
+}
+add_action( 'mohfam_sync_inquiry_contact', 'mohfam_sync_inquiry_contact', 10, 4 );
 add_action( 'wp_ajax_mohfam_submit_form', 'mohfam_handle_form_submission' );
 add_action( 'wp_ajax_nopriv_mohfam_submit_form', 'mohfam_handle_form_submission' );

@@ -4,11 +4,11 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync('twentytwentyfive.child_.theme_.-.jaimemasc.com_/assets/js/forms.js', 'utf8');
 
-async function scenario({ submitResponse, sessionOk = true, repeat = false, turnstile = false }) {
+async function scenario({ submitResponse, sessionOk = true, repeat = false, turnstile = false, optedIn = false }) {
   const status = { textContent: '', className: '' };
   const button = { textContent: 'Submit Inquiry', disabled: false, setAttribute() {}, removeAttribute() {} };
   let handler, resets = 0;
-  const typed = { name: 'Taylor Example', email: 'visitor@example.com', message: 'Keep these typed details.' };
+  const typed = { name: 'Taylor Example', email: 'visitor@example.com', message: 'Keep these typed details.', ...(optedIn ? { marketing_opt_in: '1' } : {}) };
   const original = { ...typed };
   const requests = [];
   const form = {
@@ -83,5 +83,21 @@ async function scenario({ submitResponse, sessionOk = true, repeat = false, turn
   assert.equal(captcha.submits.length, 0);
   assert.equal(captcha.resets, 0);
   assert.match(captcha.status.textContent, /818/);
-  console.log('Passed 7 offline form scenarios: success, provider failure, rejected response, invalid JSON, network error, unavailable session, and missing CAPTCHA.');
+  const opted = await scenario({ optedIn: true, submitResponse: { ok: false, json: async () => ({ success: false }) } });
+  assert.equal(opted.submits[0].body.fields.marketing_opt_in, '1');
+  assert.deepEqual(opted.typed, opted.original, 'Opt-in selection remains on error');
+  assert.equal(success.submits[0].body.fields.marketing_opt_in, undefined, 'Unchecked form omits opt-in');
+  for (const template of ['front-page.html', 'page-contact.html']) {
+    const html = fs.readFileSync(`twentytwentyfive.child_.theme_.-.jaimemasc.com_/templates/${template}`, 'utf8');
+    const input = html.match(/<input\b[^>]*name="marketing_opt_in"[^>]*>/g);
+    assert.equal(input?.length, 1, `${template}: one checkbox`);
+    assert.match(input[0], /type="checkbox"/);
+    assert.doesNotMatch(input[0], /\s(?:checked|required)(?:\s|=|>)/, 'Optional and unchecked by default');
+    const id = input[0].match(/\bid="([^"]+)"/)[1];
+    assert.ok(html.includes(`for="${id}"`), 'Accessible explicit label');
+    assert.ok(html.indexOf(input[0]) > html.indexOf('</textarea>'), 'Opt-in follows Project Details');
+    assert.ok(html.indexOf(input[0]) < html.indexOf('<div class="mohfam-turnstile"'), 'Opt-in precedes security verification');
+    assert.ok(html.includes('Send me MohFam updates and offers (optional)'));
+  }
+  console.log('Passed 8 offline form scenarios and accessible, unchecked opt-in checks on both templates.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
