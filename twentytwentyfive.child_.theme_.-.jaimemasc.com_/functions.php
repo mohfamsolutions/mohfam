@@ -133,7 +133,6 @@ add_action(
 			'mohfamForms',
 			array(
 				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-				'nonce'            => wp_create_nonce( 'mohfam_form_submission' ),
 				'turnstileEnabled' => $turnstile_enabled,
 				'turnstileSiteKey' => $turnstile_enabled ? MOHFAM_TURNSTILE_SITE_KEY : '',
 			)
@@ -249,7 +248,9 @@ function mohfam_render_submission_meta_box( $post ) {
 		'Service'              => 'service',
 		'Source page'          => 'page_url',
 		'Admin email sent'     => 'admin_mail_sent',
-		'Visitor email sent'   => 'user_mail_sent',
+		'Visitor email sent (legacy)' => 'user_mail_sent',
+		'Mail reference' => 'mail_reference',
+		'Brevo message ID' => 'mail_message_id',
 	);
 
 	echo '<table class="widefat striped" style="border:0">';
@@ -400,187 +401,5 @@ function mohfam_validate_turnstile( $token, $ip_address ) {
 	return true;
 }
 
-/**
- * Handle all public MohFam forms.
- */
-function mohfam_handle_form_submission() {
-	if ( ! check_ajax_referer( 'mohfam_form_submission', 'nonce', false ) ) {
-		wp_send_json_error(
-			array( 'message' => 'Your form session expired. Please refresh the page and try again.' ),
-			403
-		);
-	}
-
-	$form_kind = isset( $_POST['form_kind'] )
-		? sanitize_key( wp_unslash( $_POST['form_kind'] ) )
-		: '';
-	$honeypot = isset( $_POST['website'] )
-		? sanitize_text_field( wp_unslash( $_POST['website'] ) )
-		: '';
-
-	if ( 'inquiry' !== $form_kind ) {
-		wp_send_json_error( array( 'message' => 'This form could not be identified.' ), 400 );
-	}
-
-	if ( '' !== $honeypot ) {
-		wp_send_json_success(
-			array( 'message' => 'Thank you. Your request has been received.' )
-		);
-	}
-
-	$ip_address = isset( $_SERVER['REMOTE_ADDR'] )
-		? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
-		: '';
-	$turnstile_token = isset( $_POST['cf-turnstile-response'] )
-		? sanitize_text_field( wp_unslash( $_POST['cf-turnstile-response'] ) )
-		: '';
-	$turnstile_result = mohfam_validate_turnstile( $turnstile_token, $ip_address );
-
-	if ( is_wp_error( $turnstile_result ) ) {
-		$status_code = 'turnstile_not_configured' === $turnstile_result->get_error_code()
-			? 503
-			: 403;
-
-		wp_send_json_error(
-			array(
-				'message' => 503 === $status_code
-					? 'Security verification is temporarily unavailable. Please contact us directly.'
-					: 'Security verification failed. Please refresh the page and try again.',
-			),
-			$status_code
-		);
-	}
-
-	$email = isset( $_POST['email'] )
-		? sanitize_email( wp_unslash( $_POST['email'] ) )
-		: '';
-
-	if ( ! is_email( $email ) ) {
-		wp_send_json_error( array( 'message' => 'Please enter a valid email address.' ), 422 );
-	}
-
-	$rate_key = 'mohfam_form_' . md5( wp_hash( $ip_address . '|' . $form_kind ) );
-
-	if ( get_transient( $rate_key ) ) {
-		wp_send_json_error(
-			array( 'message' => 'Please wait a moment before submitting again.' ),
-			429
-		);
-	}
-
-	set_transient( $rate_key, 1, 20 );
-
-	$admin_email = 'mohfamsolutions@gmail.com';
-	$page_url = isset( $_POST['page_url'] )
-		? esc_url_raw( wp_unslash( $_POST['page_url'] ) )
-		: home_url( '/' );
-	$html_headers = array(
-		'Content-Type: text/html; charset=UTF-8',
-		'Reply-To: MohFam <' . $admin_email . '>',
-	);
-
-	$name = isset( $_POST['name'] )
-		? substr( sanitize_text_field( wp_unslash( $_POST['name'] ) ), 0, 120 )
-		: '';
-	$company = isset( $_POST['company'] )
-		? substr( sanitize_text_field( wp_unslash( $_POST['company'] ) ), 0, 160 )
-		: '';
-	$phone = isset( $_POST['phone'] )
-		? substr( sanitize_text_field( wp_unslash( $_POST['phone'] ) ), 0, 40 )
-		: '';
-	$service = isset( $_POST['service'] )
-		? sanitize_text_field( wp_unslash( $_POST['service'] ) )
-		: '';
-	$message = isset( $_POST['message'] )
-		? substr( sanitize_textarea_field( wp_unslash( $_POST['message'] ) ), 0, 4000 )
-		: '';
-
-	if ( '' === $name || '' === $service || '' === $message ) {
-		wp_send_json_error(
-			array( 'message' => 'Please complete your name, service interest, and message.' ),
-			422
-		);
-	}
-
-	$post_id = mohfam_store_submission(
-		'Inquiry — ' . $name . ' — ' . current_time( 'M j, Y g:i a' ),
-		$message,
-		array(
-			'form_kind' => 'inquiry',
-			'name'      => $name,
-			'company'   => $company,
-			'email'     => $email,
-			'phone'     => $phone,
-			'service'   => $service,
-			'page_url'  => $page_url,
-		)
-	);
-
-	$admin_message = mohfam_build_email_template(
-		'New website inquiry',
-		'A prospective client submitted an inquiry through the MohFam website.',
-		array(
-			'Name'     => $name,
-			'Company'  => $company,
-			'Email'    => $email,
-			'Phone'    => $phone,
-			'Service'  => $service,
-			'Message'  => $message,
-			'Source'   => $page_url,
-		),
-		'Reply directly to this email to contact the sender. A private copy is also available under Form Submissions in WordPress.'
-	);
-	$user_message = mohfam_build_email_template(
-		'We received your inquiry',
-		'Thank you for contacting MohFam. Our team has received your request and will review it promptly.',
-		array(
-			'Name'    => $name,
-			'Service' => $service,
-			'Message' => $message,
-		),
-		'For immediate assistance, call +1 (818) 818-1181 or email mohfamsolutions@gmail.com.'
-	);
-
-	$admin_subject = sprintf(
-		'[MohFam Website] New %1$s inquiry from %2$s',
-		$service,
-		$name
-	);
-	$admin_sent = wp_mail(
-		$admin_email,
-		$admin_subject,
-		$admin_message,
-		array(
-			'Content-Type: text/html; charset=UTF-8',
-			'Reply-To: ' . $name . ' <' . $email . '>',
-		)
-	);
-	$user_sent = wp_mail(
-		$email,
-		'We received your MohFam inquiry',
-		$user_message,
-		$html_headers
-	);
-
-	if ( ! is_wp_error( $post_id ) ) {
-		update_post_meta( $post_id, '_mohfam_admin_mail_sent', (bool) $admin_sent );
-		update_post_meta( $post_id, '_mohfam_user_mail_sent', (bool) $user_sent );
-	}
-
-	if ( ! $admin_sent || ! $user_sent ) {
-		wp_send_json_error(
-			array(
-				'message' => 'Your submission was saved, but an email could not be sent. Please call +1 (818) 818-1181 or email mohfamsolutions@gmail.com.',
-			),
-			500
-		);
-	}
-
-	wp_send_json_success(
-		array(
-			'message' => 'Thank you. Your inquiry was sent successfully, and a confirmation is on its way to your email.',
-		)
-	);
-}
-add_action( 'wp_ajax_mohfam_submit_form', 'mohfam_handle_form_submission' );
-add_action( 'wp_ajax_nopriv_mohfam_submit_form', 'mohfam_handle_form_submission' );
+require_once __DIR__ . '/inc/inquiry-mail.php';
+require_once __DIR__ . '/inc/inquiry-handler.php';

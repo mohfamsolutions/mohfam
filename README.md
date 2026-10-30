@@ -16,6 +16,10 @@ The sticky navbar slides away on downward scrolling and returns on upward scroll
 
 See [the design audit](docs/design-audit.md) for resolved findings, rendered verification, and remaining design priorities.
 
+## Inquiry email
+
+The existing contact and homepage forms use a reusable plain-PHP cURL sender for Brevo. Configuration lives outside `public_html` in the account's `private/mohfam-mail.php`; it is never deployed or committed. See [inquiry mail setup, safeguards, and the delivery test gate](docs/inquiry-mail.md). Automated checks mock the transport and never send email. Gmail delivery, Reply-To, subject, and DKIM verification require the owner's separately authorized controlled test before the form is confirmed live.
+
 ## Automatic theme deployment
 
 `.github/workflows/deploy-mohfam.yml` deploys the theme on every push to `main`, after checking PHP, JavaScript, and theme JSON syntax. It also supports a manual run from GitHub Actions on `main`.

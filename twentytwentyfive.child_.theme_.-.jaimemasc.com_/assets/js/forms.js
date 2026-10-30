@@ -7,6 +7,26 @@ document.addEventListener("DOMContentLoaded", () => {
 		const originalButtonText = submitButton ? submitButton.textContent : "";
 		const turnstileElement = form.querySelector(".mohfam-turnstile");
 		let turnstileWidgetId = null;
+		const backup = " Please call +1 (818) 818-1181 if you need help.";
+		let session = null;
+		async function refreshSession() {
+			try {
+				const request = await fetch(mohfamForms.ajaxUrl, {
+					method: "POST",
+					credentials: "same-origin",
+					cache: "no-store",
+					body: new URLSearchParams({ action: "mohfam_form_session" }),
+				});
+				const response = await request.json();
+				if (!request.ok || !response.success || !response.data?.form_token || !response.data?.nonce) {
+					return null;
+				}
+				return response.data;
+			} catch {
+				return null;
+			}
+		}
+		let sessionReady = refreshSession().then((value) => { session = value; });
 
 		if (
 			mohfamForms.turnstileEnabled &&
@@ -37,13 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			) {
 				status.className = "mohfam-form-status is-error";
 				status.textContent =
-					"Please complete the security verification and try again.";
+					"Please complete the security verification and try again." + backup;
 				return;
 			}
 
 			const formData = new FormData(form);
 			formData.append("action", "mohfam_submit_form");
-			formData.append("nonce", mohfamForms.nonce);
 			formData.append("page_url", window.location.href);
 
 			submitButton.disabled = true;
@@ -53,6 +72,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			status.textContent = "Sending your request…";
 
 			try {
+				await sessionReady;
+				if (!session) {
+					session = await refreshSession();
+				}
+				if (!session) {
+					throw new Error("Your form session could not be started. Please refresh the page." + backup);
+				}
+				formData.append("nonce", session.nonce);
+				formData.append("form_token", session.form_token);
 				const request = await fetch(mohfamForms.ajaxUrl, {
 					method: "POST",
 					credentials: "same-origin",
@@ -61,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				const response = await request.json();
 				const message =
 					response?.data?.message ||
-					"Something went wrong. Please try again.";
+					"We could not send your inquiry. Please try again." + backup;
 
 				if (!request.ok || !response.success) {
 					throw new Error(message);
@@ -70,11 +98,14 @@ document.addEventListener("DOMContentLoaded", () => {
 				status.className = "mohfam-form-status is-success";
 				status.textContent = message;
 				form.reset();
+				session = null;
+				sessionReady = refreshSession().then((value) => { session = value; });
 			} catch (error) {
 				status.className = "mohfam-form-status is-error";
-				status.textContent =
-					error.message ||
-					"Something went wrong. Please try again.";
+				const message = ["TypeError", "SyntaxError"].includes(error.name)
+					? "We could not send your inquiry. Please try again."
+					: error.message || "We could not send your inquiry. Please try again.";
+				status.textContent = message.includes("818") ? message : message + backup;
 			} finally {
 				if (turnstileWidgetId !== null && window.turnstile) {
 					window.turnstile.reset(turnstileWidgetId);
