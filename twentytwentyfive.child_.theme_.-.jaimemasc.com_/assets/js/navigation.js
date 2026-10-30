@@ -13,9 +13,11 @@
 	const submenuButton = header.querySelector('.mohfam-submenu-toggle');
 	const dropdown = header.querySelector('.mohfam-nav__dropdown');
 	if (!menu || !nav || !submenuButton || !dropdown) return;
+	const servicesLink = dropdown.querySelector('.mohfam-nav__dropdown-toggle');
 	const mobile = window.matchMedia('(max-width: 1100px)');
 	menu.hidden = false;
 	submenuButton.hidden = false;
+	if (servicesLink) servicesLink.hidden = true;
 	header.classList.add('has-navigation');
 	let hoverTimer;
 	let openedByHover = false;
@@ -23,14 +25,14 @@
 		window.clearTimeout(hoverTimer);
 		if (!fromHover || submenuButton.getAttribute('aria-expanded') !== 'true') openedByHover = fromHover;
 		submenuButton.setAttribute('aria-expanded', 'true');
-		submenuButton.setAttribute('aria-label', 'Hide service links');
+		submenuButton.setAttribute('aria-label', 'Hide Services menu');
 		dropdown.classList.add('is-open');
 	};
 	const closeSubmenu = () => {
 		window.clearTimeout(hoverTimer);
 		openedByHover = false;
 		submenuButton.setAttribute('aria-expanded', 'false');
-		submenuButton.setAttribute('aria-label', 'Show service links');
+		submenuButton.setAttribute('aria-label', 'Show Services menu');
 		dropdown.classList.remove('is-open');
 	};
 	const closeMenu = (restoreFocus = false) => {
@@ -81,7 +83,7 @@
 	});
 	mobile.addEventListener('change', () => closeMenu());
 	const path = window.location.pathname.replace(/\/$/, '') || '/';
-	if (path.startsWith('/services/')) header.querySelector('.mohfam-nav__dropdown-toggle').classList.add('is-active');
+	if (path === '/services' || path.startsWith('/services/')) submenuButton.classList.add('is-active');
 	nav.querySelectorAll('a').forEach((link) => {
 		const url = new URL(link.href);
 		if (url.origin === window.location.origin && !url.hash && (url.pathname.replace(/\/$/, '') || '/') === path) {

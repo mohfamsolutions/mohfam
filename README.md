@@ -10,6 +10,8 @@ The theme permanently redirects public GET/HEAD requests for `/commercial-cleani
 
 Shared navigation is in `parts/header.html` with progressive enhancement in `assets/js/navigation.js`. The homepage's shared app panel is in `parts/app.html`; its existing app artwork is stored locally under `assets/images`. Shared design refinements are in `assets/css/experience.css`, loaded after the base stylesheet. Both styles and scripts use file timestamps for cache invalidation.
 
+The Services label is a single text button that opens the division dropdown, without a separate arrow or extra arrow spacing. It supports hover, click/touch, and keyboard activation; Escape closes it and restores focus. All Services is the first dropdown link. Without JavaScript, Services remains a direct page link and the existing CSS navigation fallback remains available.
+
 The homepage service selector is in `parts/service-finder.html`; `parts/service-process.html` and `parts/service-faq.html` are shared with the Services page. `assets/js/experience.js` enhances the selector and adds page progress, return-to-top, and scroll effects. Native FAQ controls and the navigation fallback remain usable without JavaScript, and motion respects the visitor's reduced-motion setting.
 
 The sticky navbar slides away on downward scrolling and returns on upward scrolling. It remains visible at the top, while a menu is open, and while navigation has keyboard focus. Small scroll changes are ignored to prevent flicker.
