@@ -15,6 +15,10 @@ function mohfam_redirect_division_pages() {
 
 	$request_path = untrailingslashit( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ) );
 	$destinations = array(
+		'/mohfam-security'             => 'https://mohfamsecurity.com/',
+		'/services/mohfam-security'    => 'https://mohfamsecurity.com/',
+		'/landscaping'                 => 'https://mohfamlandscaping.com/',
+		'/services/landscaping'        => 'https://mohfamlandscaping.com/',
 		'/commercial-cleaning'          => 'https://mohfamcommercialcleaning.com/',
 		'/services/commercial-cleaning' => 'https://mohfamcommercialcleaning.com/',
 		'/pool-cleaning'                => 'https://mohfampoolcleaning.com/',

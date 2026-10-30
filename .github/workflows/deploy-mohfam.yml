@@ -63,6 +63,7 @@ jobs:
         run: |
           php tests/inquiry-mail-test.php
           node tests/forms-test.cjs
+          node tests/divisions-test.cjs
           node tests/after-response-test.cjs
 
       - name: Deploy MohFam child theme over FTPS

@@ -93,8 +93,12 @@ function mohfam_handle_form_submission() {
 		$input[ $key ] = mohfam_inquiry_post_string( $key );
 	}
 	$input['marketing_opt_in'] = mohfam_inquiry_post_string( 'marketing_opt_in' );
+	// Older cached forms and links may still submit the former waitlist value.
+	if ( 'Landscaping (Waitlist)' === $input['service'] ) {
+		$input['service'] = 'Landscaping';
+	}
 	try {
-		$fields = \MohFam\Mail\validateFields( $input, array( 'Security Services', 'Commercial Cleaning', 'Pool Cleaning', 'Landscaping (Waitlist)', 'Car Wash', 'General Inquiry' ) );
+		$fields = \MohFam\Mail\validateFields( $input, \MohFam\Mail\inquiryServices() );
 	} catch ( \InvalidArgumentException $error ) {
 		mohfam_inquiry_error( $error->getMessage(), 422 );
 	}

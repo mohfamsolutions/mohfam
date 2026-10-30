@@ -2,6 +2,11 @@
 /** Plain PHP inquiry validation, private storage, and Brevo transport. */
 namespace MohFam\Mail;
 
+/** Current inquiry options shared by the handler and confirmation builder. */
+function inquiryServices(): array {
+	return array( 'Security Services', 'Commercial Cleaning', 'Pool Cleaning', 'Landscaping', 'Car Wash', 'General Inquiry' );
+}
+
 /** Trusted site settings. Adding a map entry does not deploy to another site. */
 function siteSettings( string $site ): array {
 	$sites = array(
@@ -415,7 +420,7 @@ function confirmationPayload( array $fields, string $reference ): array {
 		'service' => $fields['service'] ?? '',
 		'message' => 'confirmation',
 		'page_url' => 'https://mohfam.co/',
-	), array( 'Security Services', 'Commercial Cleaning', 'Pool Cleaning', 'Landscaping (Waitlist)', 'Car Wash', 'General Inquiry' ) );
+	), inquiryServices() );
 	$firstName = explode( ' ', $safe['name'], 2 )[0];
 	$text = 'Hi ' . $firstName . ",\n\n"
 		. 'Thanks for contacting MohFam. We received your ' . $safe['service'] . " request and will get back to you within 1 business day.\n\n"

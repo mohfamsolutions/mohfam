@@ -2,7 +2,8 @@
 	'use strict';
 	const header = document.querySelector('.mohfam-header');
 	if (!header) return;
-	const requestedService = new URLSearchParams(window.location.search).get('service');
+	const requestedValue = new URLSearchParams(window.location.search).get('service');
+	const requestedService = requestedValue === 'Landscaping (Waitlist)' ? 'Landscaping' : requestedValue;
 	if (requestedService) {
 		document.querySelectorAll('select[name="service"]').forEach((select) => {
 			if ([...select.options].some((option) => option.value === requestedService)) select.value = requestedService;

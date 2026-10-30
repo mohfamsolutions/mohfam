@@ -337,6 +337,13 @@ namespace {
 		check( \MohFam\Mail\sendInquiryConfirmation( $fields, ABSPATH, $reference ), 'Confirmation requires and accepts 201 plus messageId' );
 		$GLOBALS['confirmation_body'] = '{}';
 		check( ! \MohFam\Mail\sendInquiryConfirmation( $fields, ABSPATH, $reference ), 'Confirmation rejects 201 without messageId' );
+		check( in_array( 'Landscaping', \MohFam\Mail\inquiryServices(), true ) && ! in_array( 'Landscaping (Waitlist)', \MohFam\Mail\inquiryServices(), true ), 'Shared service allowlist uses current Landscaping option' );
+		clearRate(); $landscapingVisitor = request( array( 'service' => 'Landscaping' ) );
+		check( $landscapingVisitor->success && 'Landscaping' === end( $GLOBALS['deferred_contacts'] )['args'][1]['service'], 'Landscaping inquiry accepted and carried to contact sync' );
+		clearRate(); $legacyLandscaping = request( array( 'service' => 'Landscaping (Waitlist)' ) );
+		check( $legacyLandscaping->success && 'Landscaping' === end( $GLOBALS['deferred_contacts'] )['args'][1]['service'], 'Cached waitlist form normalizes to Landscaping without losing inquiry' );
+		$landscapingConfirmation = \MohFam\Mail\confirmationPayload( array_replace( $fields, array( 'service' => 'Landscaping' ) ), $reference );
+		check( str_contains( $landscapingConfirmation['textContent'], 'Landscaping request' ) && ! str_contains( $landscapingConfirmation['textContent'], 'Waitlist' ), 'Landscaping confirmation uses current service label' );
 		echo 'Passed ' . $GLOBALS['checks'] . " offline inquiry checks; no network or email used.\n";
 	} finally { removeFixture( $fixture ); }
 }
